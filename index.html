@@ -890,7 +890,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
   background: #e8eaed;
   cursor: grab;
   user-select: none;
-  touch-action: pan-y;          /* 垂直滑动归页面，避免与底图放大/平移冲突 */
+  touch-action: none;           /* 交给 JS 接管：双指缩放 / 单指平移底图，不再让浏览器滚动页面 */
 }
 .plan-viewport:active {
   cursor: grabbing;
@@ -3670,7 +3670,7 @@ const PlanSection = {
         <div class="plan-header">
           <div>
             <div class="plan-title">总平面图</div>
-            <div class="plan-sub">滚轮缩放底图 · Shift+滚轮滚动页面 · 拖拽底图平移 · 单击标点进入详情</div>
+            <div class="plan-sub">滚轮缩放底图 · Shift+滚轮滚动页面 · 拖拽底图平移 · 单击标点进入详情 · 手机端双指缩放、单指拖拽</div>
           </div>
           <div class="plan-toolbar">
             <div class="plan-legend">
@@ -3797,6 +3797,9 @@ const PlanSection = {
     // 用 document 级监听，确保拖出 viewport 也能响应
     document.addEventListener('mousemove', this._onMouseMove);
     document.addEventListener('mouseup', this._onMouseUp);
+
+    // 手机端触摸手势：双指缩放 / 单指平移 / 点按标点跳转（解锁可拖拽标点）
+    this._bindTouch(viewport, { allowMarkerDrag: true });
   },
 
   /** mousemove handler（绑定到 document） */
@@ -3831,6 +3834,141 @@ const PlanSection = {
         d.newY = clampedY;
       }
     }
+  },
+
+  /**
+   * 触摸交互（手机端）：双指 pinch 缩放（以双指中点为焦点并可跟随平移）、
+   * 单指拖拽底图平移、点按标点跳转详情（锁定态）、解锁时单指拖拽标点。
+   * 同时支持总平面图(afterRender)与房屋区位图(afterRenderLocality)。
+   */
+  _bindTouch(viewport, opts) {
+    opts = opts || {};
+    const allowMarkerDrag = !!opts.allowMarkerDrag;
+    const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+
+    let mode = null;
+    let startDist = 1, startZoom = 1, lastMidX = 0, lastMidY = 0;
+    let startX = 0, startY = 0, startPanX = 0, startPanY = 0;
+    let moved = false;
+    let markerEl = null, markerId = null, markerMoved = false;
+
+    viewport.addEventListener('touchstart', (e) => {
+      moved = false;
+      if (e.touches.length === 2) {
+        mode = 'pinch';
+        startDist = dist(e.touches[0], e.touches[1]) || 1;
+        startZoom = this.view.zoom;
+        lastMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        lastMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        e.preventDefault();
+        return;
+      }
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        const hs = t.target && t.target.closest ? t.target.closest('.hotspot') : null;
+        startX = t.clientX; startY = t.clientY;
+        startPanX = this.view.panX; startPanY = this.view.panY;
+        if (hs) {
+          markerId = hs.dataset.houseId;
+          markerEl = hs;
+          if (allowMarkerDrag && !this.locked) {
+            mode = 'marker'; markerMoved = false;
+          } else {
+            mode = 'tap'; // 锁定态：点按跳转
+          }
+        } else {
+          mode = 'pan';
+          viewport.style.cursor = 'grabbing';
+        }
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    viewport.addEventListener('touchmove', (e) => {
+      if (!mode) return;
+      e.preventDefault();
+      if (mode === 'pinch' && e.touches.length >= 2) {
+        const d = dist(e.touches[0], e.touches[1]);
+        const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const vpRect = viewport.getBoundingClientRect();
+        const factor = d / startDist;
+        const newZoom = Math.max(this._fitZoom * 0.5, Math.min(2.0, startZoom * factor));
+        const fx = mx - vpRect.left, fy = my - vpRect.top;
+        // 以双指中点为焦点缩放
+        this.view.panX = fx - (fx - this.view.panX) * (newZoom / this.view.zoom);
+        this.view.panY = fy - (fy - this.view.panY) * (newZoom / this.view.zoom);
+        this.view.zoom = newZoom;
+        // 跟随双指整体平移
+        this.view.panX += (mx - lastMidX);
+        this.view.panY += (my - lastMidY);
+        lastMidX = mx; lastMidY = my;
+        this._applyTransform();
+        moved = true;
+      } else if (mode === 'pan' && e.touches.length === 1) {
+        const t = e.touches[0];
+        const dx = t.clientX - startX, dy = t.clientY - startY;
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+        this.view.panX = startPanX + dx;
+        this.view.panY = startPanY + dy;
+        this._applyTransform();
+      } else if (mode === 'marker' && e.touches.length === 1) {
+        const t = e.touches[0];
+        const dx = t.clientX - startX, dy = t.clientY - startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) { markerMoved = true; moved = true; }
+        if (markerMoved && markerEl) {
+          const canvas = document.getElementById('plan-canvas');
+          const cRect = canvas.getBoundingClientRect();
+          const pctX = Math.max(0, Math.min(100, ((t.clientX - cRect.left) / cRect.width) * 100));
+          const pctY = Math.max(0, Math.min(100, ((t.clientY - cRect.top) / cRect.height) * 100));
+          markerEl.style.left = pctX + '%';
+          markerEl.style.top = pctY + '%';
+        }
+      } else if (mode === 'tap' && e.touches.length === 1) {
+        // 点按后发生位移 → 转为平移，避免误触跳转
+        const t = e.touches[0];
+        if (Math.abs(t.clientX - startX) > 8 || Math.abs(t.clientY - startY) > 8) {
+          mode = 'pan';
+          viewport.style.cursor = 'grabbing';
+          startPanX = this.view.panX; startPanY = this.view.panY;
+          startX = t.clientX; startY = t.clientY;
+        }
+      }
+    }, { passive: false });
+
+    viewport.addEventListener('touchend', (e) => {
+      if (mode === 'pinch') {
+        if (e.touches.length === 1) {
+          // 双指松开剩一指 → 继续平移
+          mode = 'pan';
+          startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+          startPanX = this.view.panX; startPanY = this.view.panY;
+        } else {
+          mode = null;
+        }
+        return;
+      }
+      if (mode === 'pan') {
+        viewport.style.cursor = '';
+      } else if (mode === 'marker' && markerMoved && markerId && markerEl) {
+        const pctX = parseFloat(markerEl.style.left);
+        const pctY = parseFloat(markerEl.style.top);
+        if (!isNaN(pctX) && !isNaN(pctY)) {
+          this.customPositions[markerId] = { x: pctX, y: pctY };
+          this._savePositions();
+          markerEl.classList.add('custom');
+        }
+      } else if (mode === 'tap' && !moved && markerId) {
+        this.goToHouse(markerId);
+      }
+      mode = null;
+      markerEl = null; markerId = null; markerMoved = false;
+    }, { passive: false });
+
+    viewport.addEventListener('touchcancel', () => {
+      mode = null; markerEl = null; markerId = null; markerMoved = false;
+      viewport.style.cursor = '';
+    }, { passive: true });
   },
 
   /** mouseup handler（绑定到 document） */
@@ -4060,7 +4198,7 @@ const PlanSection = {
         <div class="plan-header">
           <div>
             <div class="plan-title">房屋区位图</div>
-            <div class="plan-sub">基于总平面图放大显示，仅标注本房屋位置 · 滚轮缩放 · 拖拽平移 · 双击恢复初始位置 · 锁边区滚动页面</div>
+            <div class="plan-sub">基于总平面图放大显示，仅标注本房屋位置 · 滚轮缩放 · 拖拽平移 · 双击恢复初始位置 · 手机端双指缩放、单指拖拽</div>
           </div>
         </div>
         <div class="plan-frame">
@@ -4145,6 +4283,9 @@ const PlanSection = {
     // 复用全局平移的 mousemove/mouseup（绑定到 document，拖出视口也能继续响应）
     document.addEventListener('mousemove', this._onMouseMove);
     document.addEventListener('mouseup', this._onMouseUp);
+
+    // 手机端触摸手势：双指缩放 / 单指平移（区位图锁定，不可拖拽标点）
+    this._bindTouch(viewport, { allowMarkerDrag: false });
   },
 
   /**
