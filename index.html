@@ -1699,6 +1699,137 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
 .readonly .readonly-hide,
 .readonly .edit-only { display: none !important; }
 
+/* ========== 移动端适配（手机，≤768px） ========== */
+@media (max-width: 768px) {
+  body { -webkit-text-size-adjust: 100%; }
+
+  /* 顶栏：logo 占一行，操作按钮换行横向滑动，避免溢出 */
+  .app-header { flex-wrap: wrap; height: auto; padding: 8px 12px; gap: 8px; }
+  .app-header .logo { font-size: 16px; }
+  .app-header .logo .icon { font-size: 20px; }
+  .app-header .header-actions {
+    width: 100%;
+    order: 3;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .app-header .header-actions::-webkit-scrollbar { height: 0; display: none; }
+  .readonly .header-actions { display: none; }
+
+  .main-container { padding: 12px; }
+
+  /* 栅格重排 */
+  .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .dashboard { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr 1fr; }
+
+  /* 筛选栏纵向铺满 */
+  .filter-bar { flex-direction: column; align-items: stretch; }
+  .filter-item { width: 100%; }
+  .filter-item select, .filter-item input { width: 100%; min-width: 0; }
+  .filter-actions { margin-left: 0; width: 100%; }
+  .filter-actions .btn { flex: 1; }
+
+  /* 详情头部纵向，图片全宽 */
+  .detail-header { flex-direction: column; }
+  .detail-header .detail-image { width: 100%; height: 200px; }
+  .detail-header .detail-meta { gap: 8px 16px; }
+
+  /* Tab 横向滑动，避免挤压 */
+  .tab-nav { overflow-x: auto; flex-wrap: nowrap; }
+  .tab-nav .tab-item { white-space: nowrap; }
+
+  .overview-header { gap: 8px; }
+  .leasing-toolbar { flex-wrap: wrap; }
+  .overview-search { max-width: none; width: 100%; }
+  .overview-tabs { flex-wrap: nowrap; }
+
+  /* 表单行纵向 */
+  .form-row { flex-direction: column; gap: 0; }
+
+  .detail-section { padding: 12px; }
+  .detail-toolbar { gap: 8px; }
+
+  /* 右侧悬浮房屋导航：手机隐藏，避免遮挡内容 */
+  .house-rail { display: none; }
+
+  /* 总平面图模块缩放 */
+  .plan-section .plan-header { padding: 12px 14px; gap: 8px; }
+  .plan-toolbar { gap: 8px; }
+  .plan-viewport { height: 400px; }
+  .plan-locality .plan-viewport { height: 220px; }
+
+  /* 详情页表格：允许横向滑动，避免破版 */
+  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* 列表表格 → 卡片列表 */
+  .leasing-table thead { display: none; }
+  .leasing-table, .leasing-table tbody, .leasing-table tr, .leasing-table td { display: block; width: 100%; box-sizing: border-box; }
+  .leasing-table tr {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+  }
+  .leasing-table tr.danger-row { background: #fff1f0; border-color: var(--danger); }
+  .leasing-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    border: none;
+    text-align: right;
+    font-size: 14px;
+  }
+  .leasing-table td::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    flex: 0 0 auto;
+  }
+  .leasing-table td.col-img { justify-content: flex-start; padding-bottom: 10px; }
+  .leasing-table td.col-img::before { display: none; }
+  .leasing-table td.col-img .house-thumb { width: 76px; height: 56px; }
+  .leasing-table td.col-addr .door-link { font-size: 15px; }
+  .leasing-table td.col-ops { justify-content: flex-end; flex-wrap: wrap; gap: 6px 10px; }
+  .leasing-table td.col-ops::before { display: none; }
+
+  .pagination { flex-wrap: wrap; gap: 8px; }
+  .pagination-controls { flex-wrap: wrap; justify-content: center; }
+
+  /* Toast 居中，避免贴边溢出 */
+  .toast-container { left: 12px; right: 12px; top: 70px; }
+  .toast { max-width: none; }
+
+  /* 平面图悬浮信息卡自适应宽度 */
+  .plan-tooltip { width: auto; max-width: calc(100vw - 24px); }
+}
+
+/* 超窄屏（≤480px）进一步紧凑 */
+@media (max-width: 480px) {
+  .app-header .logo { font-size: 15px; }
+  .app-header .header-actions { gap: 6px; }
+  .stats-row { grid-template-columns: 1fr; }
+  .stat-card { padding: 14px; gap: 12px; }
+  .stat-card .stat-value { font-size: 22px; }
+  .stat-card .stat-icon { width: 40px; height: 40px; font-size: 20px; }
+  .info-grid { grid-template-columns: 1fr; }
+  .main-container { padding: 10px; }
+  .detail-header .detail-image { height: 180px; }
+  .plan-viewport { height: 320px; }
+  .plan-locality .plan-viewport { height: 180px; }
+  .tab-nav .tab-item { padding: 12px 14px; font-size: 13px; }
+  .detail-section-title { font-size: 16px; }
+}
+
 </style>
 <script>window.PUBLISHED_DATA = {"houses":[{"house_id":"H001","door_number":"田墘南里399号","planning_area":"红色区块 闽台文化核心聚落","leasing_status":"空置可招商","measured_area":101.89,"floors":"一层","layout":"三间张榉头止","current_status":"全屋面修缮、内墙修补","water_meter":"","electric_meter":"","image_url":"images/houses/南里399号.jpeg","plan_url":"images/plans/田墘南里399号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘南里399号/p1_1.jpg","images/建筑档案/田墘南里399号/p3_1.jpg","images/建筑档案/田墘南里399号/p3_2.jpg","images/建筑档案/田墘南里399号/p4_1.jpg","images/建筑档案/田墘南里399号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘南里399号/田墘南里399号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H002","door_number":"田墘南里402号","planning_area":"红色区块 闽台文化核心聚落","leasing_status":"空置可招商","measured_area":95,"floors":"二层","layout":"两厅四房","current_status":"屋面部分修缮、内外墙修补、阳台构建修缮","water_meter":"","electric_meter":"","image_url":"images/houses/南里402号.jpeg","plan_url":"images/plans/田墘南里402号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘南里402号/p1_1.jpg","images/建筑档案/田墘南里402号/p3_1.jpg","images/建筑档案/田墘南里402号/p3_2.jpg","images/建筑档案/田墘南里402号/p4_1.jpg","images/建筑档案/田墘南里402号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘南里402号/田墘南里402号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H003","door_number":"田墘南里470号","planning_area":"红色区块 闽台文化核心聚落","leasing_status":"空置可招商","measured_area":24.78,"floors":"一层","layout":"一厅两房、小二层","current_status":"全屋面修缮、内外墙修补","water_meter":"","electric_meter":"","image_url":"images/houses/南里470号.jpeg","plan_url":"images/plans/田墘南里470号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘南里470号/p1_1.jpg","images/建筑档案/田墘南里470号/p3_1.jpg","images/建筑档案/田墘南里470号/p3_2.jpg"],"current_status_plan":["images/建筑档案/田墘南里470号/田墘南里466-470号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H004","door_number":"田墘南里476号","planning_area":"红色区块 闽台文化核心聚落","leasing_status":"空置可招商","measured_area":56,"floors":"一层","layout":"一厅两房","current_status":"全屋面修缮、内外墙修补、内墙重砌","water_meter":"","electric_meter":"","image_url":"images/houses/南里476号.jpeg","plan_url":"images/plans/田墘南里476号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘南里476号/p1_1.jpg","images/建筑档案/田墘南里476号/p3_1.jpg","images/建筑档案/田墘南里476号/p3_2.jpg","images/建筑档案/田墘南里476号/p4_1.jpg","images/建筑档案/田墘南里476号/p4_2.jpg","images/建筑档案/田墘南里476号/p5_1.jpg","images/建筑档案/田墘南里476号/p5_2.jpg","images/建筑档案/田墘南里476号/p5_3.jpg","images/建筑档案/田墘南里476号/p5_4.jpg"],"current_status_plan":["images/建筑档案/田墘南里476号/田墘南里476号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H005","door_number":"田墘南里400号","planning_area":"红色区块 闽台文化核心聚落","leasing_status":"空置可招商","measured_area":96.21,"floors":"一层","layout":"一厅两房","current_status":"屋面部分修缮、内外墙修补","water_meter":"","electric_meter":"","image_url":"images/houses/南里400号.png","plan_url":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":[],"current_status_plan":[],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H006","door_number":"田墘南里398-398-1号","planning_area":"红色区块 闽台文化核心聚落","leasing_status":"待修缮","measured_area":95.69,"floors":"一层","layout":"三间张","current_status":"屋面坍塌，山墙面部分坍塌，西侧开间面坍塌","water_meter":"—","electric_meter":"—","image_url":"images/houses/南里398-398-1号.png","plan_url":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-07 10:12:55","recruit_status":"招商中","repair_cycle":"长","current_status_photos":[],"current_status_plan":[],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false,"manual_tenant_name":""},{"house_id":"H007","door_number":"田墘北里92号","planning_area":"黄色区块 文化+聚落","leasing_status":"自用","measured_area":107.09,"floors":"一层","layout":"三间张榉头止","current_status":"已完成基础软装，现作为龙田乡见办公室","water_meter":"","electric_meter":"","image_url":"images/houses/北里92号.jpeg","plan_url":"images/plans/田墘北里92号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"已落户","repair_cycle":"短","current_status_photos":["images/建筑档案/田墘北里92号/p1_1.jpg","images/建筑档案/田墘北里92号/p3_1.jpg","images/建筑档案/田墘北里92号/p3_2.jpg","images/建筑档案/田墘北里92号/p4_1.jpg","images/建筑档案/田墘北里92号/p4_2.jpg","images/建筑档案/田墘北里92号/p5_1.jpg","images/建筑档案/田墘北里92号/p5_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里92号/田墘北里92号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H008","door_number":"田墘北里109号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":116.91,"floors":"一层","layout":"三间张榉头止","current_status":"屋面部分修缮、内墙修补","water_meter":"","electric_meter":"","image_url":"images/houses/北里109号.jpeg","plan_url":"images/plans/田墘北里109号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里109号/p1_1.jpg","images/建筑档案/田墘北里109号/p3_1.jpg","images/建筑档案/田墘北里109号/p3_2.jpg","images/建筑档案/田墘北里109号/p4_1.jpg","images/建筑档案/田墘北里109号/p4_2.jpg","images/建筑档案/田墘北里109号/p5_1.jpg","images/建筑档案/田墘北里109号/p5_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里109号/田墘北里109号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H009","door_number":"田墘北里110号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":243.09,"floors":"一层","layout":"三间张榉头止","current_status":"下房墙面需重砌","water_meter":"","electric_meter":"","image_url":"images/houses/北里110号.jpeg","plan_url":"images/plans/田墘北里110号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":[],"current_status_plan":["images/建筑档案/田墘北里110号/田墘北里110号_p1.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H010","door_number":"田墘北里82号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":97.83,"floors":"一层","layout":"一厅两房","current_status":"全屋面修缮、内外墙修补","water_meter":"","electric_meter":"","image_url":"images/houses/北里82号.jpeg","plan_url":"images/plans/田墘北里82号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里82号/p1_1.jpg","images/建筑档案/田墘北里82号/p3_1.jpg","images/建筑档案/田墘北里82号/p3_2.jpg","images/建筑档案/田墘北里82号/p4_1.jpg","images/建筑档案/田墘北里82号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里82号/田墘北里82号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H011","door_number":"田墘北里86号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":88,"floors":"二层","layout":"两厅两房","current_status":"院落外墙补齐重砌、阳台栏杆重砌","water_meter":"","electric_meter":"","image_url":"images/houses/北里86号.jpeg","plan_url":"images/plans/田墘北里86号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里86号/p1_1.jpg","images/建筑档案/田墘北里86号/p3_1.jpg","images/建筑档案/田墘北里86号/p3_2.jpg","images/建筑档案/田墘北里86号/p4_1.jpg","images/建筑档案/田墘北里86号/p4_2.jpg","images/建筑档案/田墘北里86号/p5_1.jpg"],"current_status_plan":["images/建筑档案/田墘北里86号/田墘北里86号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H012","door_number":"田墘北里88号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":90.85,"floors":"一层","layout":"三间张榉头止","current_status":"全屋面修缮、内墙重砌","water_meter":"","electric_meter":"","image_url":"images/houses/北里88号.jpeg","plan_url":"images/plans/田墘北里88号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里88号/p1_1.jpg","images/建筑档案/田墘北里88号/p3_1.jpg","images/建筑档案/田墘北里88号/p3_2.jpg","images/建筑档案/田墘北里88号/p4_1.jpg","images/建筑档案/田墘北里88号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里88号/田墘北里88号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H013","door_number":"田墘北里89号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":73.06,"floors":"一层","layout":"三间张榉头止","current_status":"全屋面修缮、外墙粉饰","water_meter":"","electric_meter":"","image_url":"images/houses/北里89号.jpeg","plan_url":"images/plans/田墘北里89号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里89号/p1_1.jpg","images/建筑档案/田墘北里89号/p3_1.jpg","images/建筑档案/田墘北里89号/p3_2.jpg","images/建筑档案/田墘北里89号/p4_1.jpg","images/建筑档案/田墘北里89号/p4_2.jpg","images/建筑档案/田墘北里89号/p5_1.jpg","images/建筑档案/田墘北里89号/p6_1.jpg"],"current_status_plan":["images/建筑档案/田墘北里89号/田墘北里89号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H014","door_number":"田墘北里84号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":53.28,"floors":"一层","layout":"一厅两房","current_status":"全屋面修缮、内外墙修补、隔墙拆除","water_meter":"","electric_meter":"","image_url":"images/houses/北里84号.jpeg","plan_url":"images/plans/田墘北里84号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里84号/p1_1.jpg","images/建筑档案/田墘北里84号/p3_1.jpg","images/建筑档案/田墘北里84号/p3_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里84号/田墘北里84号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H015","door_number":"田墘北里346号","planning_area":"黄色区块 文化+聚落","leasing_status":"待修缮","measured_area":139.5,"floors":"一层","layout":"-","current_status":"全屋坍塌","water_meter":"—","electric_meter":"—","image_url":"images/houses/北里346号.png","plan_url":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-07 09:56:45","recruit_status":"招商中","repair_cycle":"长","current_status_photos":[],"current_status_plan":[],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false,"manual_tenant_name":"—"},{"house_id":"H016","door_number":"田墘北里126号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":119.6,"floors":"一层","layout":"三间张榉头止","current_status":"全屋面修缮、内外墙修补、外墙部分重砌","water_meter":"","electric_meter":"","image_url":"images/houses/北里126号.jpeg","plan_url":"images/plans/田墘北里126号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里126号/p1_1.jpg","images/建筑档案/田墘北里126号/p3_1.jpg","images/建筑档案/田墘北里126号/p3_2.jpg","images/建筑档案/田墘北里126号/p4_1.jpg","images/建筑档案/田墘北里126号/p4_2.jpg","images/建筑档案/田墘北里126号/p5_1.jpg","images/建筑档案/田墘北里126号/p5_2.jpg","images/建筑档案/田墘北里126号/p6_1.jpg","images/建筑档案/田墘北里126号/p6_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里126号/田墘北里126号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H017","door_number":"田墘北里128号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":66.78,"floors":"一层","layout":"一厅两房","current_status":"部分屋面替换（现状为彩钢瓦屋面）","water_meter":"","electric_meter":"","image_url":"images/houses/北里128号.jpeg","plan_url":"images/plans/田墘北里128号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里128号/p1_1.jpg","images/建筑档案/田墘北里128号/p3_1.jpg","images/建筑档案/田墘北里128号/p3_2.jpg","images/建筑档案/田墘北里128号/p4_1.jpg","images/建筑档案/田墘北里128号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里128号/田墘北里128号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H018","door_number":"田墘北里139号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":110.83,"floors":"一层","layout":"三间张榉头止（一榉头为石头房、一榉头砖房）","current_status":"全屋面修缮、内外墙修补、外墙部分重砌","water_meter":"","electric_meter":"","image_url":"images/houses/北里139号.jpeg","plan_url":"images/plans/田墘北里139号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里139号/p1_1.jpg","images/建筑档案/田墘北里139号/p3_1.jpg","images/建筑档案/田墘北里139号/p3_2.jpg","images/建筑档案/田墘北里139号/p4_1.jpg","images/建筑档案/田墘北里139号/p4_2.jpg","images/建筑档案/田墘北里139号/p5_1.jpg","images/建筑档案/田墘北里139号/p5_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里139号/田墘北里139号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H019","door_number":"田墘北里140号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":103.69,"floors":"一层","layout":"三间张榉头止","current_status":"全屋面修缮、外墙粉饰","water_meter":"","electric_meter":"","image_url":"images/houses/北里140号.jpeg","plan_url":"images/plans/田墘北里140号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里140号/p1_1.jpg","images/建筑档案/田墘北里140号/p3_1.jpg","images/建筑档案/田墘北里140号/p3_2.jpg","images/建筑档案/田墘北里140号/p4_1.jpg","images/建筑档案/田墘北里140号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里140号/田墘北里140号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H020","door_number":"田墘北里165号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":90.96,"floors":"一层","layout":"三间张榉头止（全屋石头房）","current_status":"地砖破损","water_meter":"","electric_meter":"","image_url":"images/houses/北里165号.jpeg","plan_url":"images/plans/田墘北里165号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里165号/p1_1.jpg","images/建筑档案/田墘北里165号/p3_1.jpg","images/建筑档案/田墘北里165号/p3_2.jpg","images/建筑档案/田墘北里165号/p4_1.jpg","images/建筑档案/田墘北里165号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里165号/田墘北里165号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H021","door_number":"田墘北里166号","planning_area":"黄色区块 文化+聚落","leasing_status":"待修缮","measured_area":88.17,"floors":"一层","layout":"三间张榉头止","current_status":"屋面檩条有火烧痕迹，可能需要替换","water_meter":"","electric_meter":"","image_url":"images/houses/北里166号.jpeg","plan_url":"images/plans/田墘北里166号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-07 09:50:41","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里166号/p1_1.jpg","images/建筑档案/田墘北里166号/p3_1.jpg","images/建筑档案/田墘北里166号/p3_2.jpg","images/建筑档案/田墘北里166号/p4_1.jpg","images/建筑档案/田墘北里166号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里166号/田墘北里166号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H022","door_number":"田墘北里154号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":61.6,"floors":"二层","layout":"两厅两房","current_status":"部分屋面修缮","water_meter":"","electric_meter":"","image_url":"images/houses/北里154号.png","plan_url":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":[],"current_status_plan":[],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H023","door_number":"田墘北里154-1号","planning_area":"黄色区块 文化+聚落","leasing_status":"待修缮","measured_area":81,"floors":"一层","layout":"-","current_status":"全屋坍塌","water_meter":"—","electric_meter":"—","image_url":"images/houses/北里154-1号.png","plan_url":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-07 09:57:05","recruit_status":"招商中","repair_cycle":"长","current_status_photos":[],"current_status_plan":[],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false,"manual_tenant_name":"—"},{"house_id":"H024","door_number":"田墘北里122号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":61.38,"floors":"一层","layout":"三间张榉头止","current_status":"屋面部分修缮","water_meter":"","electric_meter":"","image_url":"images/houses/北里122号.jpeg","plan_url":"images/plans/田墘北里122号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里122号/p1_1.jpg","images/建筑档案/田墘北里122号/p3_1.jpg","images/建筑档案/田墘北里122号/p3_2.jpg","images/建筑档案/田墘北里122号/p4_1.jpg","images/建筑档案/田墘北里122号/p4_2.jpg","images/建筑档案/田墘北里122号/p5_1.jpg","images/建筑档案/田墘北里122号/p5_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里122号/田墘北里122号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H025","door_number":"田墘北里81号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":184.5,"floors":"一层","layout":"五间张榉头止","current_status":"屋面部分修缮、部分屋面替换（原为石棉瓦屋面）","water_meter":"","electric_meter":"","image_url":"images/houses/北里80号.jpeg","plan_url":"images/plans/田墘北里80号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-07 09:55:04","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘北里80号/p1_1.jpg","images/建筑档案/田墘北里80号/p3_1.jpg","images/建筑档案/田墘北里80号/p3_2.jpg","images/建筑档案/田墘北里80号/p4_1.jpg","images/建筑档案/田墘北里80号/p4_2.jpg","images/建筑档案/田墘北里80号/p5_1.jpg","images/建筑档案/田墘北里80号/p5_2.jpg","images/建筑档案/田墘北里80号/p6_1.jpg","images/建筑档案/田墘北里80号/p6_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里80号/田墘北里80号_p2.pdf"],"renovation_drawings":["—"],"renovation_photos":["—"],"is_dangerous":false},{"house_id":"H026","door_number":"田墘北里352号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":55,"floors":"一层","layout":"一厅一房","current_status":"屋面部分修缮、外墙粉饰","water_meter":"","electric_meter":"","image_url":"images/houses/北里352号.png","plan_url":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":[],"current_status_plan":[],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H027","door_number":"田墘北里120号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":129.8,"floors":"二层","layout":"两厅四房","current_status":"全屋面修缮、外墙修补、二楼楼板加固","water_meter":"","electric_meter":"","image_url":"images/houses/北里120号.jpeg","plan_url":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":[],"current_status_plan":[],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H028","door_number":"田墘北里117号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":136.8,"floors":"一层","layout":"三间张榉头止","current_status":"屋面部分修缮、外墙修补","water_meter":"","electric_meter":"","image_url":"images/houses/北里117号.jpeg","plan_url":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":[],"current_status_plan":[],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H029","door_number":"田墘北里118号","planning_area":"黄色区块 文化+聚落","leasing_status":"空置可招商","measured_area":226,"floors":"一层","layout":"三间张榉头止","current_status":"-","water_meter":"","electric_meter":"","image_url":"images/houses/北里118号.jpeg","plan_url":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":[],"current_status_plan":[],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H030","door_number":"田墘北里104号","planning_area":"绿色区块 文化+聚落","leasing_status":"空置可招商","measured_area":567,"floors":"四层+夹层","layout":"-","current_status":"阿萍的房子","water_meter":"","electric_meter":"","image_url":"images/houses/北里104号.jpeg","plan_url":"images/plans/田墘北里104号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"短","current_status_photos":["images/建筑档案/田墘北里104号/p10_1.jpg","images/建筑档案/田墘北里104号/p10_2.jpg","images/建筑档案/田墘北里104号/p1_1.jpg","images/建筑档案/田墘北里104号/p8_1.jpg","images/建筑档案/田墘北里104号/p8_2.jpg","images/建筑档案/田墘北里104号/p9_1.jpg","images/建筑档案/田墘北里104号/p9_2.jpg"],"current_status_plan":["images/建筑档案/田墘北里104号/田墘北里104号_p2.pdf","images/建筑档案/田墘北里104号/田墘北里104号_p3.pdf","images/建筑档案/田墘北里104号/田墘北里104号_p4.pdf","images/建筑档案/田墘北里104号/田墘北里104号_p5.pdf","images/建筑档案/田墘北里104号/田墘北里104号_p6.pdf","images/建筑档案/田墘北里104号/田墘北里104号_p7.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H031","door_number":"田墘南里349号","planning_area":"绿色区块 文化+聚落","leasing_status":"空置可招商","measured_area":145.8,"floors":"一层","layout":"","current_status":"屋面部分修缮、内墙修补","water_meter":"","electric_meter":"","image_url":"images/houses/南里349号.jpeg","plan_url":"images/plans/田墘南里349号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘南里349号/p1_1.jpg","images/建筑档案/田墘南里349号/p3_1.jpg","images/建筑档案/田墘南里349号/p3_2.jpg","images/建筑档案/田墘南里349号/p4_1.jpg","images/建筑档案/田墘南里349号/p4_2.jpg","images/建筑档案/田墘南里349号/p5_1.jpg","images/建筑档案/田墘南里349号/p5_2.jpg"],"current_status_plan":["images/建筑档案/田墘南里349号/田墘南里349号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H032","door_number":"田墘南里385号","planning_area":"绿色区块 文化+聚落","leasing_status":"空置可招商","measured_area":85.94,"floors":"一层","layout":"","current_status":"屋面部分修缮、内外墙修补","water_meter":"","electric_meter":"","image_url":"images/houses/南里385号.jpeg","plan_url":"images/plans/田墘南里385号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘南里385号/p1_1.jpg","images/建筑档案/田墘南里385号/p3_1.jpg","images/建筑档案/田墘南里385号/p3_2.jpg"],"current_status_plan":["images/建筑档案/田墘南里385号/田墘南里385号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H033","door_number":"田墘南里410号","planning_area":"绿色区块 文化+聚落","leasing_status":"空置可招商","measured_area":215.69,"floors":"二层","layout":"三间张榉头止","current_status":"屋面部分修缮","water_meter":"","electric_meter":"","image_url":"images/houses/南里410号.jpeg","plan_url":"images/plans/田墘南里410号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘南里410号/p1_1.jpg","images/建筑档案/田墘南里410号/p3_1.jpg","images/建筑档案/田墘南里410号/p3_2.jpg","images/建筑档案/田墘南里410号/p4_1.jpg","images/建筑档案/田墘南里410号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘南里410号/田墘南里410号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false},{"house_id":"H034","door_number":"田墘南里466号","planning_area":"红色区块 闽台文化核心聚落","leasing_status":"空置可招商","measured_area":63,"floors":"一层","layout":"一厅两房、小二层","current_status":"全屋面修缮、内外墙修补","water_meter":"","electric_meter":"","image_url":"images/houses/南里470号.jpeg","plan_url":"images/plans/田墘南里470号.pdf","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00","recruit_status":"招商中","repair_cycle":"中","current_status_photos":["images/建筑档案/田墘南里466号/p1_1.jpg","images/建筑档案/田墘南里466号/p3_1.jpg","images/建筑档案/田墘南里466号/p3_2.jpg","images/建筑档案/田墘南里466号/p4_1.jpg","images/建筑档案/田墘南里466号/p4_2.jpg"],"current_status_plan":["images/建筑档案/田墘南里466号/田墘南里466-470号_p2.pdf"],"renovation_drawings":[],"renovation_photos":[],"is_dangerous":false}],"masterContracts":[{"contract_id":"MC001","contract_number":"HZS2017-011","house_id":"H003","owner_name":"郑神助（独立户）","contract_area":24.78,"roof_condition":"破损","facade_condition":"修缮","structure_condition":"危险","grade":"A","payable_rent":0,"payment_status_master":"待支付","start_date":"","end_date":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00"},{"contract_id":"MC002","contract_number":"HZS2017-020","house_id":"H034","owner_name":"郑其智（独立户）","contract_area":63,"roof_condition":"完好","facade_condition":"修缮","structure_condition":"局部危险","grade":"A","payable_rent":0,"payment_status_master":"待支付","start_date":"","end_date":"","created_at":"2026-08-06T11:00:00","updated_at":"2026-08-06T11:00:00"}],"subContracts":[],"changeLogs":[{"log_id":"LOG1786096241100801","house_id":"H021","timestamp":"2026-08-07 09:50:41","operator":"详情页招商情况编辑","field":"recruit_status","field_label":"招商情况","old_value":"洽谈中","new_value":"招商中"},{"log_id":"LOG1786096504773720","house_id":"H025","timestamp":"2026-08-07 09:55:04","operator":"详情页编辑","field":"door_number","field_label":"门牌号","old_value":"田墘北里80号","new_value":"田墘北里81号"},{"log_id":"LOG1786096504774897","house_id":"H025","timestamp":"2026-08-07 09:55:04","operator":"详情页编辑","field":"renovation_drawings","field_label":"renovation_drawings","old_value":"","new_value":"—"},{"log_id":"LOG1786096504774776","house_id":"H025","timestamp":"2026-08-07 09:55:04","operator":"详情页编辑","field":"renovation_photos","field_label":"renovation_photos","old_value":"","new_value":"—"},{"log_id":"LOG1786096605553585","house_id":"H015","timestamp":"2026-08-07 09:56:45","operator":"快速编辑","field":"recruit_status","field_label":"招商情况","old_value":"洽谈中","new_value":"招商中"},{"log_id":"LOG1786096605553134","house_id":"H015","timestamp":"2026-08-07 09:56:45","operator":"快速编辑","field":"manual_tenant_name","field_label":"manual_tenant_name","old_value":"","new_value":"—"},{"log_id":"LOG1786096605553925","house_id":"H015","timestamp":"2026-08-07 09:56:45","operator":"快速编辑","field":"water_meter","field_label":"水表号","old_value":"","new_value":"—"},{"log_id":"LOG1786096605553291","house_id":"H015","timestamp":"2026-08-07 09:56:45","operator":"快速编辑","field":"electric_meter","field_label":"电表号","old_value":"","new_value":"—"},{"log_id":"LOG1786096618686423","house_id":"H006","timestamp":"2026-08-07 09:56:58","operator":"快速编辑","field":"recruit_status","field_label":"招商情况","old_value":"洽谈中","new_value":"招商中"},{"log_id":"LOG1786096618686370","house_id":"H006","timestamp":"2026-08-07 09:56:58","operator":"快速编辑","field":"manual_tenant_name","field_label":"manual_tenant_name","old_value":"","new_value":"—"},{"log_id":"LOG1786096618687226","house_id":"H006","timestamp":"2026-08-07 09:56:58","operator":"快速编辑","field":"water_meter","field_label":"水表号","old_value":"","new_value":"—"},{"log_id":"LOG1786096618687769","house_id":"H006","timestamp":"2026-08-07 09:56:58","operator":"快速编辑","field":"electric_meter","field_label":"电表号","old_value":"","new_value":"—"},{"log_id":"LOG1786096625420307","house_id":"H023","timestamp":"2026-08-07 09:57:05","operator":"快速编辑","field":"recruit_status","field_label":"招商情况","old_value":"洽谈中","new_value":"招商中"},{"log_id":"LOG1786096625420906","house_id":"H023","timestamp":"2026-08-07 09:57:05","operator":"快速编辑","field":"manual_tenant_name","field_label":"manual_tenant_name","old_value":"","new_value":"—"},{"log_id":"LOG1786096625420551","house_id":"H023","timestamp":"2026-08-07 09:57:05","operator":"快速编辑","field":"water_meter","field_label":"水表号","old_value":"","new_value":"—"},{"log_id":"LOG1786096625421459","house_id":"H023","timestamp":"2026-08-07 09:57:05","operator":"快速编辑","field":"electric_meter","field_label":"电表号","old_value":"","new_value":"—"},{"log_id":"LOG1786097575069568","house_id":"H006","timestamp":"2026-08-07 10:12:55","operator":"快速编辑","field":"manual_tenant_name","field_label":"manual_tenant_name","old_value":"—","new_value":""}],"planPositions":{"H020":{"x":35.90529260532479,"y":34.30444730423435},"H014":{"x":39.7126866032037,"y":56.59439480461247},"H013":{"x":37.994580043254736,"y":55.17934374968648},"H019":{"x":37.57242383079113,"y":41.42629117218497},"H015":{"x":36.110427225124766,"y":56.94333816286184},"H007":{"x":34.843175102800835,"y":50.32061153848522},"H008":{"x":34.06170999461429,"y":46.616625514012156},"H009":{"x":37.60742918300428,"y":48.75754071386771},"H010":{"x":42.27969388404141,"y":55.20919376396114},"H016":{"x":43.7196384696504,"y":48.6618318626474},"H011":{"x":40.178859565990734,"y":55.22180130438331},"H017":{"x":40.911440566914166,"y":45.45165267889105},"H012":{"x":38.58868696426485,"y":52.67510978938913},"H018":{"x":35.76714260902157,"y":40.38992497005185},"H024":{"x":47.93187263083377,"y":51.19946342993331},"H005":{"x":41.161794705539606,"y":67.45552682300445},"H021":{"x":37.42724769434284,"y":35.0864929575369},"H001":{"x":43.68781046584919,"y":66.47974752501251},"H022":{"x":33.38727075603127,"y":37.45032666895865},"H004":{"x":42.26322629145236,"y":63.45100563466076},"H006":{"x":45.42978695654491,"y":67.425714477212},"H023":{"x":33.601766150051745,"y":36.10274884424995},"H034":{"x":39.49106628742575,"y":61.93735769969192},"H002":{"x":37.4401047663846,"y":64.55005142046505},"H003":{"x":40.65306241222687,"y":62.60549313385136},"H029":{"x":55.475591823452405,"y":57.891055853993166},"H028":{"x":52.816150278715625,"y":56.587635486500886},"H027":{"x":53.17409745143211,"y":54.05869267765365},"H026":{"x":50.653264950606136,"y":50.295272302038086},"H025":{"x":48.89697149820901,"y":59.09814662024663},"H030":{"x":19.62945781634986,"y":38.77641415849825},"H031":{"x":24.739423190586557,"y":84.17513297217546},"H032":{"x":23.77559895576545,"y":62.42494865627236},"H033":{"x":19.844760464052122,"y":51.77330501807902}}};</script>
 </head>
@@ -5485,18 +5616,18 @@ const ListPage = {
                   const imgUrl = h.image_url || '';
                   return `
                     <tr class="${h.is_dangerous ? 'danger-row' : ''}">
-                      <td>
+                      <td class="col-img" data-label="房屋图片">
                         <div class="house-thumb">
                           ${imgUrl ? `<img src="${Utils.esc(imgUrl)}" alt="" onerror="this.style.display='none'">` : ''}
                           <span class="thumb-ph">🏠</span>
                         </div>
                       </td>
-                      <td><span class="door-link" onclick="Router.navigate('detail', '${h.house_id}')">${Utils.esc(h.door_number)}</span>${h.is_dangerous ? '<span class="danger-badge">⚠危房</span>' : ''}</td>
-                      <td>${Utils.formatArea(h.measured_area)}</td>
-                      <td>${Utils.statusTag(h.recruit_status, RECRUIT_COLORS)}</td>
-                      <td>${Utils.statusTag(h.repair_cycle, REPAIR_COLORS)}</td>
-                      <td>${Utils.esc(tenantName)}</td>
-                      <td>
+                      <td class="col-addr" data-label="地址"><span class="door-link" onclick="Router.navigate('detail', '${h.house_id}')">${Utils.esc(h.door_number)}</span>${h.is_dangerous ? '<span class="danger-badge">⚠危房</span>' : ''}</td>
+                      <td data-label="面积">${Utils.formatArea(h.measured_area)}</td>
+                      <td data-label="招商情况">${Utils.statusTag(h.recruit_status, RECRUIT_COLORS)}</td>
+                      <td data-label="需修缮周期">${Utils.statusTag(h.repair_cycle, REPAIR_COLORS)}</td>
+                      <td data-label="当前经营户">${Utils.esc(tenantName)}</td>
+                      <td class="col-ops" data-label="操作">
                         <button class="btn-text btn-sm" onclick="Router.navigate('detail', '${h.house_id}')">查看</button>
                         <button class="btn-text btn-sm" title="在平面图上定位" onclick="event.stopPropagation(); PlanSection.focusHouse('${h.house_id}')">📍定位</button>
                         <button class="btn-text btn-sm readonly-hide" onclick="Drawers.openQuickEdit('${h.house_id}')">编辑</button>
@@ -5834,22 +5965,75 @@ const Actions = {
     });
   },
 
-  /** 一键把当前数据生成只读查看页并 POST 到本地接收服务（由助手部署到在线托管）。 */
-  publishOnline() {
+  /** 一键将当前数据生成只读查看页并直接推送到 GitHub Pages 仓库（无需本地服务中转）。
+   *  GitHub Token 仅存于本机浏览器 localStorage，绝不写入任何文件或发布页。 */
+  async publishOnline() {
     if (READONLY) { Utils.toast('当前为查看版，无法再次发布', 'error'); return; }
     Utils.toast('正在生成并上传…', 'info');
-    buildViewerHtml().then(html => {
-      return fetch('http://127.0.0.1:8777/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/html;charset=utf-8' },
-        body: html
-      });
-    }).then(r => {
-      if (!r.ok) throw new Error('上传失败 (' + r.status + ')');
-      Utils.toast('已上传，助手正在生成在线链接…', 'success', 6000);
-    }).catch(err => {
-      Utils.toast('上传失败：' + err.message + '（请确认本地接收服务已启动，或刷新页面重试）', 'error', 6000);
+
+    // Token 仅取自本机浏览器 localStorage，不在代码/发布页中硬编码
+    let token = localStorage.getItem('tq_gh_pat');
+    if (!token) {
+      token = window.prompt(
+        '请输入 GitHub 个人访问令牌(PAT)用于一键发布。\n' +
+        '令牌仅保存在本机浏览器，不会写入文件或发布页。\n' +
+        '（需要仓库 sakurasoupoi-blip/tianqian-hongzhuan-gucuo 的 repo 权限）', ''
+      );
+      if (!token) { Utils.toast('未提供令牌，已取消发布', 'error'); return; }
+      token = token.trim();
+      if (!token) { Utils.toast('未提供令牌，已取消发布', 'error'); return; }
+      localStorage.setItem('tq_gh_pat', token);
+    }
+
+    const OWNER = 'sakurasoupoi-blip';
+    const REPO = 'tianqian-hongzhuan-gucuo';
+
+    // UTF-8 安全的 base64 编码（btoa 不能直接处理中文）
+    const utf8ToBase64 = (str) => {
+      const bytes = new TextEncoder().encode(str);
+      let binary = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      return btoa(binary);
+    };
+
+    const api = (method, path, body) => fetch('https://api.github.com' + path, {
+      method,
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'tianqian-demo',
+        'Content-Type': 'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined
     });
+
+    try {
+      const html = await buildViewerHtml();
+      const content = utf8ToBase64(html);
+
+      // 取当前文件 sha（存在则更新，不存在则新建）
+      const cur = await api('GET', `/repos/${OWNER}/${REPO}/contents/index.html?ref=main`);
+      let sha;
+      if (cur.ok) { const j = await cur.json(); sha = j.sha; }
+
+      const putBody = { message: '更新 ' + new Date().toISOString(), content };
+      if (sha) putBody.sha = sha;
+
+      const res = await api('PUT', `/repos/${OWNER}/${REPO}/contents/index.html`, putBody);
+      if (!res.ok) {
+        let msg = 'HTTP ' + res.status;
+        try { const e = await res.json(); if (e && e.message) msg = e.message; } catch (_) {}
+        throw new Error(msg);
+      }
+      const rj = await res.json();
+      const cs = (rj.commit && rj.commit.sha) ? rj.commit.sha.slice(0, 10) : '';
+      Utils.toast('✅ 已发布到在线（提交 ' + cs + '），硬刷新固定链接即可查看', 'success', 8000);
+    } catch (err) {
+      Utils.toast('发布失败：' + err.message + '（令牌无效或网络异常时请重试；可在浏览器控制台清除 tq_gh_pat 重新输入）', 'error', 9000);
+    }
   },
 
   handleImportFile(file) {
