@@ -1286,6 +1286,48 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
 .plan-locality .plan-viewport { height: 240px; cursor: grab; }
 .plan-locality .plan-viewport:active { cursor: grabbing; }
 
+/* 全屏查看模式（手机端单击地图进入） */
+.plan-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #1c1f24;
+  display: flex;
+  flex-direction: column;
+  touch-action: none;            /* 手势全部交给 JS */
+}
+.plan-fs-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: #fff;
+  background: rgba(0,0,0,0.35);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.plan-fs-title { font-size: 16px; font-weight: 600; }
+.plan-fs-hint { flex: 1 1 auto; font-size: 12px; color: rgba(255,255,255,0.7); }
+.plan-fs-close {
+  flex: 0 0 auto;
+  width: 38px; height: 38px;
+  border: none; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  color: #fff; font-size: 22px; line-height: 1;
+  cursor: pointer;
+}
+.plan-fs-close:active { background: rgba(255,255,255,0.3); }
+.plan-fs-viewport {
+  flex: 1 1 auto;
+  width: 100%;
+  height: auto;
+  background: #1c1f24;
+  cursor: grab;
+  touch-action: none;
+}
+.plan-fs-viewport:active { cursor: grabbing; }
+
 /* 基础情况网格 */
 .info-grid {
   display: grid;
@@ -3798,8 +3840,95 @@ const PlanSection = {
     document.addEventListener('mousemove', this._onMouseMove);
     document.addEventListener('mouseup', this._onMouseUp);
 
-    // 手机端触摸手势：双指缩放 / 单指平移 / 点按标点跳转（解锁可拖拽标点）
-    this._bindTouch(viewport, { allowMarkerDrag: true });
+    // 手机端触摸手势：双指缩放 / 单指平移 / 点按标点跳转 / 点空白处进入全屏
+    this._bindTouch(viewport, { allowMarkerDrag: true, fullscreenKind: 'plan' });
+  },
+
+  /**
+   * 手机端：单击地图进入全屏查看模式。
+   * 全屏内支持双指缩放、单指拖拽；点击空白（或关闭按钮）退出全屏，回到原页面视图。
+   * kind: 'plan' | 'locality'；locality 需传 houseId 以居中本房屋。
+   */
+  openFullscreen(kind, houseId) {
+    if (document.getElementById('plan-fullscreen')) return;
+    // 保存内联视图状态，退出全屏后恢复，避免相互污染
+    this._fsSavedView = { zoom: this.view.zoom, panX: this.view.panX, panY: this.view.panY };
+    this._fsSavedFit = this._fitZoom;
+
+    // 复用当前画布内的底图与标点（保证点位与总平图一致），克隆进全屏画布
+    const srcCanvas = document.getElementById('plan-canvas');
+    const ov = document.createElement('div');
+    ov.id = 'plan-fullscreen';
+    ov.className = 'plan-fullscreen';
+    ov.innerHTML =
+      '<div class="plan-fs-header">' +
+        '<span class="plan-fs-title">' + (kind === 'locality' ? '房屋区位图' : '总平面图') + '</span>' +
+        '<span class="plan-fs-hint">双指缩放 · 单指拖拽 · 点击空白处退出</span>' +
+        '<button class="plan-fs-close" title="退出全屏">×</button>' +
+      '</div>' +
+      '<div class="plan-viewport plan-fs-viewport" id="plan-fs-viewport">' +
+        '<div class="plan-canvas" id="plan-fs-canvas" ' +
+          'style="width:' + PLAN_IMG_W + 'px;height:' + PLAN_IMG_H + 'px;transform:translate(0,0) scale(1);transform-origin:0 0;">' +
+          (srcCanvas ? srcCanvas.innerHTML : '') +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    document.body.style.overflow = 'hidden';
+
+    const vp = ov.querySelector('#plan-fs-viewport');
+    const canvas = ov.querySelector('#plan-fs-canvas');
+
+    // 计算全屏初始视图
+    const rect = vp.getBoundingClientRect();
+    const fit = Math.min(rect.width / PLAN_IMG_W, rect.height / PLAN_IMG_H);
+    this._fitZoom = fit;
+    if (kind === 'locality' && houseId) {
+      const pos = this.getPos(houseId);
+      if (pos) {
+        const vpW = rect.width, vpH = rect.height;
+        const fx = pos.x / 100, fy = pos.y / 100;
+        const needX = (fx > 0 && fx < 1) ? vpW / (PLAN_IMG_W * (1 - 2 * Math.abs(fx - 0.5))) : 0;
+        const needY = (fy > 0 && fy < 1) ? vpH / (PLAN_IMG_H * (1 - 2 * Math.abs(fy - 0.5))) : 0;
+        let z = Math.max(fit, needX, needY, 0.5);
+        z = Math.min(2.0, z);
+        this.view.zoom = z;
+        const cx = (pos.x / 100) * PLAN_IMG_W * z;
+        const cy = (pos.y / 100) * PLAN_IMG_H * z;
+        this.view.panX = vpW / 2 - cx;
+        this.view.panY = vpH / 2 - cy;
+      } else {
+        this.view = { zoom: fit, panX: 0, panY: 0 };
+      }
+    } else {
+      this.view = { zoom: fit, panX: 0, panY: 0 };
+    }
+    this._clampPan(vp);
+    this._applyTransform(canvas);
+
+    // 全屏内仅查看：双指缩放 / 单指拖拽；空白点按退出；标点默认退出（总平图标点则点进详情）
+    this._bindTouch(vp, {
+      allowMarkerDrag: false,
+      onBlankTap: () => this.closeFullscreen(),
+      onHotspotTap: (id) => {
+        this.closeFullscreen();
+        if (kind === 'plan' && id) this.goToHouse(id);
+      }
+    });
+
+    ov.querySelector('.plan-fs-close').addEventListener('click', () => this.closeFullscreen());
+  },
+
+  /** 退出全屏查看模式，恢复内联视图状态 */
+  closeFullscreen() {
+    const ov = document.getElementById('plan-fullscreen');
+    if (ov) ov.remove();
+    document.body.style.overflow = '';
+    if (this._fsSavedView) {
+      this.view = this._fsSavedView;
+      this._fitZoom = this._fsSavedFit;
+      const c = document.getElementById('plan-canvas');
+      if (c) this._applyTransform(c);
+    }
   },
 
   /** mousemove handler（绑定到 document） */
@@ -3851,8 +3980,7 @@ const PlanSection = {
     let startX = 0, startY = 0, startPanX = 0, startPanY = 0;
     let moved = false;
     let markerEl = null, markerId = null, markerMoved = false;
-    // 双击检测（用于空白双击复位）
-    let lastTapTime = 0, lastTapX = 0, lastTapY = 0, tapTimer = null;
+    const canvasEl = viewport.querySelector('.plan-canvas');
 
     viewport.addEventListener('touchstart', (e) => {
       moved = false;
@@ -3905,7 +4033,7 @@ const PlanSection = {
         this.view.panX += (mx - lastMidX);
         this.view.panY += (my - lastMidY);
         lastMidX = mx; lastMidY = my;
-        this._applyTransform();
+        this._applyTransform(canvasEl);
         moved = true;
       } else if (mode === 'pan' && e.touches.length === 1) {
         const t = e.touches[0];
@@ -3913,14 +4041,13 @@ const PlanSection = {
         if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
         this.view.panX = startPanX + dx;
         this.view.panY = startPanY + dy;
-        this._applyTransform();
+        this._applyTransform(canvasEl);
       } else if (mode === 'marker' && e.touches.length === 1) {
         const t = e.touches[0];
         const dx = t.clientX - startX, dy = t.clientY - startY;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) { markerMoved = true; moved = true; }
-        if (markerMoved && markerEl) {
-          const canvas = document.getElementById('plan-canvas');
-          const cRect = canvas.getBoundingClientRect();
+        if (markerMoved && markerEl && canvasEl) {
+          const cRect = canvasEl.getBoundingClientRect();
           const pctX = Math.max(0, Math.min(100, ((t.clientX - cRect.left) / cRect.width) * 100));
           const pctY = Math.max(0, Math.min(100, ((t.clientY - cRect.top) / cRect.height) * 100));
           markerEl.style.left = pctX + '%';
@@ -3953,29 +4080,10 @@ const PlanSection = {
       }
       if (mode === 'pan') {
         viewport.style.cursor = '';
-        // 空白点按（未移动）：单指点按逐级放大到该点；双击空白复位为总览/初始视图
+        // 空白点按（未移动）：回调方式进入/退出全屏（由调用方决定行为）
         if (!moved) {
-          const now = Date.now();
-          const near = Math.abs(startX - lastTapX) < 30 && Math.abs(startY - lastTapY) < 30;
-          if (now - lastTapTime < 300 && near) {
-            // 双击 → 复位
-            if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
-            lastTapTime = 0;
-            if (this._localityInitial) {
-              this.view = { zoom: this._localityInitial.zoom, panX: this._localityInitial.panX, panY: this._localityInitial.panY };
-              this._clampPan(); this._applyTransform();
-            } else {
-              this.resetView();
-            }
-          } else {
-            lastTapX = startX; lastTapY = startY; lastTapTime = now;
-            if (tapTimer) clearTimeout(tapTimer);
-            tapTimer = setTimeout(() => {
-              tapTimer = null;
-              const vpRect = viewport.getBoundingClientRect();
-              this._tapZoomIn(startX - vpRect.left, startY - vpRect.top);
-            }, 280);
-          }
+          if (opts.onBlankTap) opts.onBlankTap();
+          else if (opts.fullscreenKind) this.openFullscreen(opts.fullscreenKind, opts.fullscreenHouseId);
         }
       } else if (mode === 'marker' && markerMoved && markerId && markerEl) {
         const pctX = parseFloat(markerEl.style.left);
@@ -3986,25 +4094,17 @@ const PlanSection = {
           markerEl.classList.add('custom');
         }
       } else if (mode === 'tap' && !moved && markerId) {
-        this.goToHouse(markerId);
+        if (opts.onHotspotTap) opts.onHotspotTap(markerId);
+        else this.goToHouse(markerId);
       }
       mode = null;
       markerEl = null; markerId = null; markerMoved = false;
     }, { passive: false });
 
     viewport.addEventListener('touchcancel', () => {
-      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
       mode = null; markerEl = null; markerId = null; markerMoved = false;
       viewport.style.cursor = '';
     }, { passive: true });
-  },
-
-  /** 手机端空白点按：以该点为焦点逐级放大（每次约 1.8x，上限 2x 原始分辨率） */
-  _tapZoomIn(vx, vy) {
-    if (!this._fitZoom) return;
-    const target = Math.min(2.0, Math.max(this.view.zoom * 1.8, this._fitZoom * 1.8));
-    if (target <= this.view.zoom) return;
-    this._zoomAt(vx, vy, target / this.view.zoom);
   },
 
   /** mouseup handler（绑定到 document） */
@@ -4030,33 +4130,33 @@ const PlanSection = {
     PlanSection._drag = null;
   },
 
-  /** 应用 transform 到 canvas，并根据缩放级别切换标签/脉冲可见性 */
-  _applyTransform() {
-    this._clampPan(); // 统一约束平移边界，防止底图被拖出视野
-    const canvas = document.getElementById('plan-canvas');
-    if (canvas) {
-      canvas.style.transform = `translate(${this.view.panX}px, ${this.view.panY}px) scale(${this.view.zoom})`;
+  /** 应用 transform 到指定 canvas（不传则默认主画布），并根据缩放级别切换标签/脉冲可见性 */
+  _applyTransform(canvasEl) {
+    canvasEl = canvasEl || document.getElementById('plan-canvas');
+    if (!canvasEl) return;
+    const vp = canvasEl.closest('.plan-viewport');
+    this._clampPan(vp); // 统一约束平移边界，防止底图被拖出视野
+    canvasEl.style.transform = `translate(${this.view.panX}px, ${this.view.panY}px) scale(${this.view.zoom})`;
 
-      // 标点反向缩放：zoom 越小标点越大，保持可见性
-      // 100% → 1x（不变），50% → 2x，25% → 4x（封顶），更低 → 仍 4x
-      const ms = Math.min(4, Math.max(1, 1 / this.view.zoom));
-      canvas.style.setProperty('--marker-scale', ms);
+    // 标点反向缩放：zoom 越小标点越大，保持可见性
+    // 100% → 1x（不变），50% → 2x，25% → 4x（封顶），更低 → 仍 4x
+    const ms = Math.min(4, Math.max(1, 1 / this.view.zoom));
+    canvasEl.style.setProperty('--marker-scale', ms);
 
-      // 低缩放时隐藏标签（标点虽放大但标签会互相重叠）
-      if (this.view.zoom < 0.35) {
-        canvas.classList.add('hide-labels');
-      } else {
-        canvas.classList.remove('hide-labels');
-      }
-      // 极低缩放时隐藏脉冲动画（性能优化）
-      if (this.view.zoom < 0.15) {
-        canvas.classList.add('hide-pulse');
-      } else {
-        canvas.classList.remove('hide-pulse');
-      }
+    // 低缩放时隐藏标签（标点虽放大但标签会互相重叠）
+    if (this.view.zoom < 0.35) {
+      canvasEl.classList.add('hide-labels');
+    } else {
+      canvasEl.classList.remove('hide-labels');
+    }
+    // 极低缩放时隐藏脉冲动画（性能优化）
+    if (this.view.zoom < 0.15) {
+      canvasEl.classList.add('hide-pulse');
+    } else {
+      canvasEl.classList.remove('hide-pulse');
     }
     const level = document.getElementById('plan-zoom-level');
-    if (level) level.textContent = Math.round(this.view.zoom * 100) + '%';
+    if (level && canvasEl.id === 'plan-canvas') level.textContent = Math.round(this.view.zoom * 100) + '%';
   },
 
   /**
@@ -4065,8 +4165,8 @@ const PlanSection = {
    *   - 底图比视口小时，自动居中
    * 这样既能自由缩放查看，又不会"过于随意"地把图拖飞。
    */
-  _clampPan() {
-    const vp = document.getElementById('plan-viewport');
+  _clampPan(vpEl) {
+    const vp = vpEl || document.getElementById('plan-viewport');
     if (!vp) return;
     const rect = vp.getBoundingClientRect();
     const vpW = rect.width, vpH = rect.height;
@@ -4320,8 +4420,8 @@ const PlanSection = {
     document.addEventListener('mousemove', this._onMouseMove);
     document.addEventListener('mouseup', this._onMouseUp);
 
-    // 手机端触摸手势：双指缩放 / 单指平移（区位图锁定，不可拖拽标点）
-    this._bindTouch(viewport, { allowMarkerDrag: false });
+    // 手机端触摸手势：双指缩放 / 单指平移 / 点空白处进入全屏
+    this._bindTouch(viewport, { allowMarkerDrag: false, fullscreenKind: 'locality', fullscreenHouseId: houseId });
   },
 
   /**
