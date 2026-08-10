@@ -1328,6 +1328,12 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
 }
 .plan-fs-viewport:active { cursor: grabbing; }
 
+/* 手势进行中：升为独立合成层 + 停掉标点动画，避免大图每帧重新光栅化导致的拖影/延迟 */
+.plan-canvas.gesturing { will-change: transform; }
+.plan-canvas.gesturing .hotspot-pulse { animation: none !important; }
+.plan-canvas.gesturing .hotspot { transition: none !important; }
+.plan-image { backface-visibility: hidden; }
+
 /* 基础情况网格 */
 .info-grid {
   display: grid;
@@ -1755,6 +1761,139 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
 .readonly .readonly-hide,
 .readonly .edit-only { display: none !important; }
 
+/* ========== 访问权限：登录门 + 身份标识（仅在线查看版） ========== */
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(150deg, #6d3b2e 0%, #8c4a34 45%, #b0684a 100%);
+}
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px 24px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  text-align: center;
+}
+.auth-logo { font-size: 44px; line-height: 1; }
+.auth-title {
+  margin-top: 10px;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--text-primary, #22262e);
+  letter-spacing: 1px;
+}
+.auth-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-secondary, #8a8f99);
+}
+.auth-body { margin-top: 24px; }
+.auth-btn {
+  height: 44px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter .15s ease, background .15s ease;
+}
+.auth-btn:active { filter: brightness(0.93); }
+.auth-btn-primary {
+  width: 100%;
+  background: #8c4a34;
+  color: #fff;
+}
+.auth-btn-ghost {
+  flex: 0 0 auto;
+  padding: 0 18px;
+  background: #f2f3f5;
+  border-color: #e0e2e6;
+  color: var(--text-primary, #22262e);
+}
+.auth-divider {
+  position: relative;
+  margin: 18px 0;
+  font-size: 12px;
+  color: #b6bac2;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 22px);
+  height: 1px;
+  background: #eceef1;
+}
+.auth-divider::before { left: 0; }
+.auth-divider::after { right: 0; }
+.auth-pwd-row { display: flex; gap: 8px; }
+.auth-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #e0e2e6;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+}
+.auth-input:focus { border-color: #8c4a34; }
+.auth-error {
+  min-height: 18px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: #d94b3c;
+}
+.auth-foot {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #b6bac2;
+  line-height: 1.6;
+}
+
+/* 顶栏身份标识 */
+.auth-badge { display: inline-flex; align-items: center; gap: 8px; }
+.auth-badge-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.auth-badge-tag.guest { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.auth-badge-tag.full { background: rgba(120, 200, 140, 0.25); color: #eafaef; }
+.auth-badge-btn {
+  padding: 3px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+.auth-badge-btn:active { background: rgba(255, 255, 255, 0.15); }
+
+/* 受限内容占位 */
+.auth-locked {
+  padding: 18px;
+  border: 1px dashed #dfe2e6;
+  border-radius: var(--radius-sm, 8px);
+  background: #fafbfc;
+  color: var(--text-secondary, #8a8f99);
+  font-size: 13.5px;
+  text-align: center;
+}
+
+/* 游客态仪表盘只有 2 张卡 */
+.dashboard-2 { grid-template-columns: repeat(2, 1fr); }
+
 /* ========== 移动端适配（手机，≤768px） ========== */
 @media (max-width: 768px) {
   body { -webkit-text-size-adjust: 100%; }
@@ -1773,7 +1912,18 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
     -webkit-overflow-scrolling: touch;
   }
   .app-header .header-actions::-webkit-scrollbar { height: 0; display: none; }
-  .readonly .header-actions { display: none; }
+  /* 只读版顶栏只剩身份标识，收窄贴右不占整行 */
+  .readonly .header-actions {
+    width: auto;
+    order: 2;
+    margin-left: auto;
+    overflow: visible;
+  }
+
+  /* 登录门手机适配 */
+  .auth-card { padding: 26px 20px 20px; border-radius: 14px; }
+  .auth-logo { font-size: 38px; }
+  .auth-title { font-size: 19px; }
 
   .main-container { padding: 12px; }
 
@@ -1897,6 +2047,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
       <span>田墘红砖古厝demo</span>
     </div>
     <div class="header-actions">
+      <span id="auth-badge-slot"></span>
       <div class="btn-group readonly-hide" role="group" aria-label="Excel 数据交换">
         <button class="btn btn-sm" onclick="Actions.showImportModal()" title="从 Excel(.xlsx) 批量导入，按门牌号匹配">📥 导入</button>
         <button class="btn btn-sm" onclick="Actions.showExportModal()" title="导出为 Excel(.xlsx)">📤 导出</button>
@@ -3010,6 +3161,153 @@ const DB = {
 </script>
   <script>
 /**
+ * 访问权限模块（仅在线查看版 READONLY 生效）
+ *
+ * 两种身份：
+ *   - guest（游客）：隐藏「招商数量」「资产管理」「改造图纸/改造照片」
+ *   - full（密码登录）：全部可见
+ *
+ * 说明：这是纯静态站点，密码只做轻量哈希混淆（防止源码里直接搜到明文），
+ * 不具备服务端级别的安全性，仅用于日常分享时的分级展示。
+ */
+const Auth = {
+  KEY: 'tq_auth_level',
+  /** 密码 hash（djb2 变体，36 进制）。明文不落代码。 */
+  _HASH: 'yk50zj',
+
+  /** 当前身份：'guest' | 'full'；本地编辑版恒为 'full' */
+  level: 'full',
+
+  _hash(s) {
+    let x = 5381;
+    for (let i = 0; i < s.length; i++) {
+      x = (((x << 5) + x) ^ s.charCodeAt(i)) >>> 0;
+    }
+    return x.toString(36);
+  },
+
+  /** 是否可查看敏感内容（招商数量 / 资产管理 / 改造图纸与照片） */
+  canSeeSensitive() {
+    return this.level === 'full';
+  },
+
+  /**
+   * 启动门禁。本地编辑版直接放行；只读版按会话记录决定是否弹登录。
+   * @param {Function} onReady 通过后回调（渲染首页）
+   */
+  boot(onReady) {
+    if (typeof READONLY === 'undefined' || !READONLY) {
+      this.level = 'full';
+      onReady();
+      return;
+    }
+    let saved = null;
+    try { saved = sessionStorage.getItem(this.KEY); } catch (e) {}
+    if (saved === 'guest' || saved === 'full') {
+      this.level = saved;
+      this._applyBodyClass();
+      onReady();
+      return;
+    }
+    this._renderGate(onReady);
+  },
+
+  _applyBodyClass() {
+    document.body.classList.toggle('auth-guest', this.level === 'guest');
+    document.body.classList.toggle('auth-full', this.level === 'full');
+  },
+
+  _setLevel(level) {
+    this.level = level;
+    try { sessionStorage.setItem(this.KEY, level); } catch (e) {}
+    this._applyBodyClass();
+  },
+
+  /** 渲染登录遮罩 */
+  _renderGate(onReady) {
+    const gate = document.createElement('div');
+    gate.className = 'auth-gate';
+    gate.id = 'auth-gate';
+    gate.innerHTML =
+      '<div class="auth-card">' +
+        '<div class="auth-logo">🏠</div>' +
+        '<div class="auth-title">田墘红砖古厝</div>' +
+        '<div class="auth-sub">房屋资产运营台账</div>' +
+        '<div class="auth-body">' +
+          '<button class="auth-btn auth-btn-primary" id="auth-guest-btn">游客浏览</button>' +
+          '<div class="auth-divider"><span>或</span></div>' +
+          '<div class="auth-pwd-row">' +
+            '<input type="password" class="auth-input" id="auth-pwd" placeholder="输入密码查看完整内容" autocomplete="current-password">' +
+            '<button class="auth-btn auth-btn-ghost" id="auth-login-btn">登录</button>' +
+          '</div>' +
+          '<div class="auth-error" id="auth-error"></div>' +
+        '</div>' +
+        '<div class="auth-foot">游客模式下部分经营与改造信息不予展示</div>' +
+      '</div>';
+    document.body.appendChild(gate);
+    document.body.style.overflow = 'hidden';
+
+    const done = (level) => {
+      this._setLevel(level);
+      gate.remove();
+      document.body.style.overflow = '';
+      onReady();
+    };
+
+    const tryLogin = () => {
+      const input = document.getElementById('auth-pwd');
+      const err = document.getElementById('auth-error');
+      const val = (input.value || '').trim();
+      if (!val) { err.textContent = '请输入密码'; return; }
+      if (this._hash(val) === this._HASH) {
+        done('full');
+      } else {
+        err.textContent = '密码不正确，请重试';
+        input.value = '';
+        input.focus();
+      }
+    };
+
+    document.getElementById('auth-guest-btn').addEventListener('click', () => done('guest'));
+    document.getElementById('auth-login-btn').addEventListener('click', tryLogin);
+    document.getElementById('auth-pwd').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') tryLogin();
+    });
+  },
+
+  /** 顶栏身份标识 + 切换入口（只读版可见） */
+  renderBadge() {
+    if (typeof READONLY === 'undefined' || !READONLY) return '';
+    const isGuest = this.level === 'guest';
+    return '<div class="auth-badge">' +
+      '<span class="auth-badge-tag ' + (isGuest ? 'guest' : 'full') + '">' +
+        (isGuest ? '游客' : '完整访问') + '</span>' +
+      '<button class="auth-badge-btn" onclick="Auth.switchIdentity()">' +
+        (isGuest ? '登录' : '退出') + '</button>' +
+    '</div>';
+  },
+
+  /** 切换身份：游客 → 弹登录；完整 → 退回游客 */
+  switchIdentity() {
+    if (this.level === 'full') {
+      this._setLevel('guest');
+      Router.render();
+      if (typeof Utils !== 'undefined') Utils.toast('已退出，当前为游客浏览', 'info');
+      return;
+    }
+    if (document.getElementById('auth-gate')) return;
+    this._renderGate(() => {
+      Router.render();
+      if (typeof Utils !== 'undefined' && this.level === 'full') {
+        Utils.toast('已登录，可查看完整内容', 'success');
+      }
+    });
+  }
+};
+
+</script>
+  <script>
+/**
  * 全局常量定义 + 业务逻辑层 (Biz)
  * 该文件必须在 data.js 之后、utils.js 之前加载
  */
@@ -3855,8 +4153,11 @@ const PlanSection = {
     this._fsSavedView = { zoom: this.view.zoom, panX: this.view.panX, panY: this.view.panY };
     this._fsSavedFit = this._fitZoom;
 
-    // 复用当前画布内的底图与标点（保证点位与总平图一致），克隆进全屏画布
+    // 直接搬运原画布节点（不克隆）：9933×7016 的底图无需重新解码，进全屏零白屏、零延迟
     const srcCanvas = document.getElementById('plan-canvas');
+    if (!srcCanvas) return;
+    this._fsHome = { parent: srcCanvas.parentNode, next: srcCanvas.nextSibling };
+
     const ov = document.createElement('div');
     ov.id = 'plan-fullscreen';
     ov.className = 'plan-fullscreen';
@@ -3866,17 +4167,13 @@ const PlanSection = {
         '<span class="plan-fs-hint">双指缩放 · 单指拖拽 · 点击空白处退出</span>' +
         '<button class="plan-fs-close" title="退出全屏">×</button>' +
       '</div>' +
-      '<div class="plan-viewport plan-fs-viewport" id="plan-fs-viewport">' +
-        '<div class="plan-canvas" id="plan-fs-canvas" ' +
-          'style="width:' + PLAN_IMG_W + 'px;height:' + PLAN_IMG_H + 'px;transform:translate(0,0) scale(1);transform-origin:0 0;">' +
-          (srcCanvas ? srcCanvas.innerHTML : '') +
-        '</div>' +
-      '</div>';
+      '<div class="plan-viewport plan-fs-viewport" id="plan-fs-viewport"></div>';
     document.body.appendChild(ov);
     document.body.style.overflow = 'hidden';
 
     const vp = ov.querySelector('#plan-fs-viewport');
-    const canvas = ov.querySelector('#plan-fs-canvas');
+    vp.appendChild(srcCanvas);       // 搬入全屏
+    const canvas = srcCanvas;
 
     // 计算全屏初始视图
     const rect = vp.getBoundingClientRect();
@@ -3918,16 +4215,22 @@ const PlanSection = {
     ov.querySelector('.plan-fs-close').addEventListener('click', () => this.closeFullscreen());
   },
 
-  /** 退出全屏查看模式，恢复内联视图状态 */
+  /** 退出全屏查看模式：把画布搬回原位并恢复内联视图状态 */
   closeFullscreen() {
     const ov = document.getElementById('plan-fullscreen');
+    const canvas = document.getElementById('plan-canvas');
+    // 先把画布搬回原容器，再销毁全屏层（顺序反了画布会被一起移除）
+    if (canvas && this._fsHome && this._fsHome.parent) {
+      this._fsHome.parent.insertBefore(canvas, this._fsHome.next || null);
+    }
+    this._fsHome = null;
     if (ov) ov.remove();
     document.body.style.overflow = '';
     if (this._fsSavedView) {
       this.view = this._fsSavedView;
       this._fitZoom = this._fsSavedFit;
-      const c = document.getElementById('plan-canvas');
-      if (c) this._applyTransform(c);
+      this._fsSavedView = null;
+      if (canvas) this._applyTransform(canvas);
     }
   },
 
@@ -3980,12 +4283,14 @@ const PlanSection = {
     let startX = 0, startY = 0, startPanX = 0, startPanY = 0;
     let moved = false;
     let markerEl = null, markerId = null, markerMoved = false;
-    const canvasEl = viewport.querySelector('.plan-canvas');
+    // 动态取画布：全屏会把同一个 canvas 节点搬进搬出，不能在绑定时刻固化引用
+    const canvasEl = () => viewport.querySelector('.plan-canvas');
 
     viewport.addEventListener('touchstart', (e) => {
       moved = false;
       if (e.touches.length === 2) {
         mode = 'pinch';
+        this._beginGesture(viewport, canvasEl());
         startDist = dist(e.touches[0], e.touches[1]) || 1;
         startZoom = this.view.zoom;
         lastMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
@@ -4008,6 +4313,7 @@ const PlanSection = {
           }
         } else {
           mode = 'pan';
+          this._beginGesture(viewport, canvasEl());
           viewport.style.cursor = 'grabbing';
         }
         e.preventDefault();
@@ -4021,10 +4327,11 @@ const PlanSection = {
         const d = dist(e.touches[0], e.touches[1]);
         const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-        const vpRect = viewport.getBoundingClientRect();
+        // 用手势开始时缓存的视口原点，避免每帧 getBoundingClientRect 触发同步布局
+        const vpOrigin = this._vpOrigin || { left: 0, top: 0 };
         const factor = d / startDist;
         const newZoom = Math.max(this._fitZoom * 0.5, Math.min(2.0, startZoom * factor));
-        const fx = mx - vpRect.left, fy = my - vpRect.top;
+        const fx = mx - vpOrigin.left, fy = my - vpOrigin.top;
         // 以双指中点为焦点缩放
         this.view.panX = fx - (fx - this.view.panX) * (newZoom / this.view.zoom);
         this.view.panY = fy - (fy - this.view.panY) * (newZoom / this.view.zoom);
@@ -4033,7 +4340,7 @@ const PlanSection = {
         this.view.panX += (mx - lastMidX);
         this.view.panY += (my - lastMidY);
         lastMidX = mx; lastMidY = my;
-        this._applyTransform(canvasEl);
+        this._applyTransform(canvasEl());
         moved = true;
       } else if (mode === 'pan' && e.touches.length === 1) {
         const t = e.touches[0];
@@ -4041,13 +4348,14 @@ const PlanSection = {
         if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
         this.view.panX = startPanX + dx;
         this.view.panY = startPanY + dy;
-        this._applyTransform(canvasEl);
+        this._applyTransform(canvasEl());
       } else if (mode === 'marker' && e.touches.length === 1) {
         const t = e.touches[0];
         const dx = t.clientX - startX, dy = t.clientY - startY;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) { markerMoved = true; moved = true; }
-        if (markerMoved && markerEl && canvasEl) {
-          const cRect = canvasEl.getBoundingClientRect();
+        const cv = canvasEl();
+        if (markerMoved && markerEl && cv) {
+          const cRect = cv.getBoundingClientRect();
           const pctX = Math.max(0, Math.min(100, ((t.clientX - cRect.left) / cRect.width) * 100));
           const pctY = Math.max(0, Math.min(100, ((t.clientY - cRect.top) / cRect.height) * 100));
           markerEl.style.left = pctX + '%';
@@ -4059,6 +4367,7 @@ const PlanSection = {
         if (Math.abs(t.clientX - startX) > 8 || Math.abs(t.clientY - startY) > 8) {
           mode = 'pan';
           moved = true;
+          this._beginGesture(viewport, canvasEl());
           viewport.style.cursor = 'grabbing';
           startPanX = this.view.panX; startPanY = this.view.panY;
           startX = t.clientX; startY = t.clientY;
@@ -4069,17 +4378,20 @@ const PlanSection = {
     viewport.addEventListener('touchend', (e) => {
       if (mode === 'pinch') {
         if (e.touches.length === 1) {
-          // 双指松开剩一指 → 继续平移
+          // 双指松开剩一指 → 继续平移（仍在手势中，不结束 rAF 模式）
           mode = 'pan';
+          moved = true;
           startX = e.touches[0].clientX; startY = e.touches[0].clientY;
           startPanX = this.view.panX; startPanY = this.view.panY;
         } else {
           mode = null;
+          this._endGesture(canvasEl());
         }
         return;
       }
       if (mode === 'pan') {
         viewport.style.cursor = '';
+        this._endGesture(canvasEl());
         // 空白点按（未移动）：回调方式进入/退出全屏（由调用方决定行为）
         if (!moved) {
           if (opts.onBlankTap) opts.onBlankTap();
@@ -4104,6 +4416,7 @@ const PlanSection = {
     viewport.addEventListener('touchcancel', () => {
       mode = null; markerEl = null; markerId = null; markerMoved = false;
       viewport.style.cursor = '';
+      this._endGesture(canvasEl());
     }, { passive: true });
   },
 
@@ -4130,13 +4443,34 @@ const PlanSection = {
     PlanSection._drag = null;
   },
 
-  /** 应用 transform 到指定 canvas（不传则默认主画布），并根据缩放级别切换标签/脉冲可见性 */
+  /**
+   * 应用 transform 到指定 canvas（不传则默认主画布）。
+   * 手势期间（_rafMode）走 rAF 合帧，只写 transform，跳过 class/文本等昂贵操作，
+   * 避免每个 touchmove 都触发一次样式重算，是手机端跟手度的关键。
+   */
   _applyTransform(canvasEl) {
     canvasEl = canvasEl || document.getElementById('plan-canvas');
     if (!canvasEl) return;
+
+    if (this._rafMode) {
+      this._rafCanvas = canvasEl;
+      if (this._rafId) return;                     // 本帧已排队，丢弃中间态
+      this._rafId = requestAnimationFrame(() => {
+        this._rafId = null;
+        const el = this._rafCanvas;
+        if (!el) return;
+        this._clampPan(el.closest('.plan-viewport'));
+        // translate3d 触发 GPU 合成层，避免大图每帧重新光栅化
+        el.style.transform =
+          `translate3d(${this.view.panX}px, ${this.view.panY}px, 0) scale(${this.view.zoom})`;
+      });
+      return;
+    }
+
     const vp = canvasEl.closest('.plan-viewport');
     this._clampPan(vp); // 统一约束平移边界，防止底图被拖出视野
-    canvasEl.style.transform = `translate(${this.view.panX}px, ${this.view.panY}px) scale(${this.view.zoom})`;
+    canvasEl.style.transform =
+      `translate3d(${this.view.panX}px, ${this.view.panY}px, 0) scale(${this.view.zoom})`;
 
     // 标点反向缩放：zoom 越小标点越大，保持可见性
     // 100% → 1x（不变），50% → 2x，25% → 4x（封顶），更低 → 仍 4x
@@ -4159,6 +4493,35 @@ const PlanSection = {
     if (level && canvasEl.id === 'plan-canvas') level.textContent = Math.round(this.view.zoom * 100) + '%';
   },
 
+  /** 进入/退出手势模式：期间只刷 transform，退出时补齐一次完整样式 */
+  _beginGesture(viewport, canvasEl) {
+    this._rafMode = true;
+    this._vpSize = null;
+    this._measureVp(viewport);           // 手势开始测一次，期间复用
+    if (canvasEl) canvasEl.classList.add('gesturing');
+  },
+  _endGesture(canvasEl) {
+    this._rafMode = false;
+    if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
+    this._vpSize = null;
+    if (canvasEl) canvasEl.classList.remove('gesturing');
+    this._applyTransform(canvasEl);      // 手势结束补齐标签/脉冲/百分比
+  },
+
+  /** 缓存视口尺寸，避免手势中反复 getBoundingClientRect 触发同步布局 */
+  _measureVp(vp) {
+    if (!vp) return null;
+    const r = vp.getBoundingClientRect();
+    this._vpSize = { w: r.width, h: r.height };
+    this._vpOrigin = { left: r.left, top: r.top };
+    return this._vpSize;
+  },
+  /** 非手势场景：实时量一次（不写缓存） */
+  _measureVpOnce(vp) {
+    const r = vp.getBoundingClientRect();
+    return { w: r.width, h: r.height };
+  },
+
   /**
    * 约束平移边界（cover 模式）：
    *   - 底图比视口大时，保证底图始终覆盖视口（不能露出空白、也不能被拖出画面）
@@ -4168,8 +4531,8 @@ const PlanSection = {
   _clampPan(vpEl) {
     const vp = vpEl || document.getElementById('plan-viewport');
     if (!vp) return;
-    const rect = vp.getBoundingClientRect();
-    const vpW = rect.width, vpH = rect.height;
+    const size = (this._rafMode && this._vpSize) ? this._vpSize : this._measureVpOnce(vp);
+    const vpW = size.w, vpH = size.h;
     const z = this.view.zoom;
     const scaledW = PLAN_IMG_W * z;
     const scaledH = PLAN_IMG_H * z;
@@ -4707,7 +5070,9 @@ const DetailPage = {
 
       <!-- 顶部操作栏：板块三（资产管理）作为独立按钮置于上方 -->
       <div class="detail-toolbar">
-        <button class="btn btn-sm asset-mgmt-btn" onclick="DetailPage.goAssetMgmt()">🏢 资产管理</button>
+        ${((typeof Auth === 'undefined') || Auth.canSeeSensitive())
+          ? `<button class="btn btn-sm asset-mgmt-btn" onclick="DetailPage.goAssetMgmt()">🏢 资产管理</button>`
+          : ''}
         <div class="detail-toolbar-right">
           <button class="btn btn-sm readonly-hide ${isSettled ? 'btn-success' : ''}" onclick="DetailPage.markSettled()">${isSettled ? '✓ 已落户' : '快速标记已落户'}</button>
           <button class="btn btn-sm readonly-hide ${isDanger ? 'btn-danger' : ''}" onclick="DetailPage.toggleDanger()">⚠ 危房提醒${isDanger ? '（已开启）' : ''}</button>
@@ -4779,8 +5144,12 @@ const DetailPage = {
         </div>
 
         <div class="disclosure-list">
-          ${this._disclosure('改造图纸', this._photoGrid(house.renovation_drawings, 'renovation_drawings'), true)}
-          ${this._disclosure('改造照片', this._photoGrid(house.renovation_photos, 'renovation_photos'), true)}
+          ${((typeof Auth === 'undefined') || Auth.canSeeSensitive()) ? `
+            ${this._disclosure('改造图纸', this._photoGrid(house.renovation_drawings, 'renovation_drawings'), true)}
+            ${this._disclosure('改造照片', this._photoGrid(house.renovation_photos, 'renovation_photos'), true)}
+          ` : `
+            <div class="auth-locked">🔒 改造图纸与改造照片需登录后查看</div>
+          `}
         </div>
       </div>
 
@@ -4996,12 +5365,19 @@ const DetailPage = {
 
   // ========== 板块三：资产管理（敏感信息：合同 / 租金 / 水电标号） ==========
   goAssetMgmt() {
+    if (typeof Auth !== 'undefined' && !Auth.canSeeSensitive()) {
+      Utils.toast('资产管理需登录后查看', 'info');
+      return;
+    }
     Router.navigate('asset', this.currentHouseId);
   },
 
   /** 资产管理页：仅在内部展示合同、租金、水电标号等敏感信息 */
   renderAssetMgmt(houseId) {
     this.currentHouseId = houseId;
+    if (typeof Auth !== 'undefined' && !Auth.canSeeSensitive()) {
+      return '<div class="empty-state"><div class="icon">🔒</div><div class="text">资产管理需登录后查看</div></div>';
+    }
     const house = DB.getHouseById(houseId);
     if (!house) {
       return '<div class="empty-state"><div class="icon">❌</div><div class="text">房屋不存在</div></div>';
@@ -5795,6 +6171,9 @@ const Router = {
 
   render() {
     const app = document.getElementById('app');
+    // 顶栏身份标识（仅在线查看版渲染）
+    const badgeSlot = document.getElementById('auth-badge-slot');
+    if (badgeSlot && typeof Auth !== 'undefined') badgeSlot.innerHTML = Auth.renderBadge();
     if (this.currentView === 'list') {
       app.innerHTML = ListPage.render();
       ListPage.afterRender();
@@ -5890,12 +6269,15 @@ const ListPage = {
   render() {
     const stats = Biz.getStats();
     const totalArea = DB.getHouses().reduce((s, h) => s + (parseFloat(h.measured_area) || 0), 0);
-    const leasing = OverviewState.tab === 'leasing' ? this.getLeasingHouses() : [];
+    const canSee = (typeof Auth === 'undefined') || Auth.canSeeSensitive();
+    // 游客无资产管理权限，强制落回招商信息管理
+    const tab = canSee ? OverviewState.tab : 'leasing';
+    const leasing = tab === 'leasing' ? this.getLeasingHouses() : [];
     const settledCount = DB.getHouses().filter(h => (h.recruit_status || '') === '已落户').length;
 
     return `
       <!-- 仪表盘（位于总平面图之前） -->
-      <div class="dashboard">
+      <div class="dashboard${canSee ? '' : ' dashboard-2'}">
         <div class="dash-card dash-total">
           <div class="dash-icon">📋</div>
           <div class="dash-info">
@@ -5903,6 +6285,7 @@ const ListPage = {
             <div class="dash-label">租赁标的数量</div>
           </div>
         </div>
+        ${canSee ? `
         <div class="dash-card dash-rented">
           <div class="dash-icon">🤝</div>
           <div class="dash-info">
@@ -5910,6 +6293,7 @@ const ListPage = {
             <div class="dash-label">招商数量（已落户）</div>
           </div>
         </div>
+        ` : ''}
         <div class="dash-card dash-area">
           <div class="dash-icon">📐</div>
           <div class="dash-info">
@@ -5927,12 +6311,12 @@ const ListPage = {
         <div class="overview-header">
           <div class="overview-title">信息一览</div>
           <div class="overview-tabs">
-            <button class="tab-btn ${OverviewState.tab === 'leasing' ? 'active' : ''}" onclick="ListPage.switchTab('leasing')">招商信息管理</button>
-            <button class="tab-btn ${OverviewState.tab === 'asset' ? 'active' : ''}" onclick="ListPage.switchTab('asset')">资产管理</button>
+            <button class="tab-btn ${tab === 'leasing' ? 'active' : ''}" onclick="ListPage.switchTab('leasing')">招商信息管理</button>
+            ${canSee ? `<button class="tab-btn ${tab === 'asset' ? 'active' : ''}" onclick="ListPage.switchTab('asset')">资产管理</button>` : ''}
           </div>
         </div>
 
-        ${OverviewState.tab === 'leasing' ? `
+        ${tab === 'leasing' ? `
           <div class="leasing-toolbar">
             <input type="text" id="overview-search" class="overview-search"
                    placeholder="搜索 招商情况 / 房屋地址"
@@ -6026,6 +6410,11 @@ const ListPage = {
   },
 
   switchTab(tab) {
+    // 游客无资产管理权限
+    if (tab === 'asset' && typeof Auth !== 'undefined' && !Auth.canSeeSensitive()) {
+      Utils.toast('资产管理需登录后查看', 'info');
+      return;
+    }
     OverviewState.tab = tab;
     Router.render();
   },
@@ -6153,7 +6542,7 @@ function rowToFields(row) {
  */
 async function buildViewerHtml() {
   if (READONLY) throw new Error('当前为查看版，无法再次发布');
-  const jsPaths = ['js/imported_media.js', 'js/data.js', 'js/config.js', 'js/utils.js',
+  const jsPaths = ['js/imported_media.js', 'js/data.js', 'js/auth.js', 'js/config.js', 'js/utils.js',
     'js/plan.js', 'js/modals.js', 'js/detail.js', 'js/viewer.js', 'js/app.js'];
   const read = async (p) => {
     const r = await fetch(p, { cache: 'no-store' });
@@ -6699,7 +7088,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (READONLY) document.body.classList.add('readonly');
   DB.init();
   initBackToTop();
-  Router.navigate('list');
+  // 在线查看版先过门禁（游客 / 密码），本地编辑版直接放行
+  Auth.boot(() => Router.navigate('list'));
 });
 
 // ========== 返回顶部按钮 ==========
