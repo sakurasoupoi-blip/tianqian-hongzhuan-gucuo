@@ -1626,6 +1626,11 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
   max-width: 92vw; max-height: 88vh; object-fit: contain;
   border-radius: 6px; box-shadow: 0 12px 48px rgba(0,0,0,.55);
   background: #fff; cursor: default;
+  touch-action: none;            /* 交给我们 JS 接管所有触摸手势（缩放/平移/滑动） */
+  -webkit-user-select: none; user-select: none;
+  -webkit-user-drag: none;
+  transform-origin: center center;
+  will-change: transform;
 }
 .viewer-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
@@ -1656,6 +1661,15 @@ input, select, textarea { font-family: inherit; font-size: 14px; outline: none; 
   overflow: hidden; display: flex;
 }
 .viewer-pdf { width: 100%; height: 100%; border: 0; }
+
+/* 移动端：图片查看器按钮加大、降低遮挡，图片占更大范围 */
+@media (max-width: 768px) {
+  .viewer-nav { width: 52px; height: 52px; font-size: 34px; background: rgba(255,255,255,.16); }
+  .viewer-nav.prev { left: 6px; }
+  .viewer-nav.next { right: 6px; }
+  .viewer-close { top: 12px; right: 12px; width: 44px; height: 44px; font-size: 28px; }
+  .viewer-img { max-width: 96vw; max-height: 82vh; }
+}
 
 /* 设备信息 */
 .device-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 12px; }
@@ -5309,7 +5323,8 @@ const DetailPage = {
 
 </script>
   <script>
-/* 看图灯箱 Viewer：图片点击居中放大+左右切换+点击空白关闭；PDF 居中放大可滚动+点击空白关闭 */
+/* 看图灯箱 Viewer：图片支持 双指缩放 / 单指平移(放大时) / 左右滑动切换(未放大时) / 双击缩放；
+   PDF 居中放大可滚动；点击空白关闭 */
 (function () {
   const Viewer = {
     _overlay: null,
@@ -5325,9 +5340,21 @@ const DetailPage = {
       const prev = this._overlay.querySelector('.viewer-nav.prev');
       const next = this._overlay.querySelector('.viewer-nav.next');
 
+      // 缩放/平移状态
+      let scale = 1, tx = 0, ty = 0;
+      const apply = () => { img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')'; };
+      const reset = () => {
+        scale = 1; tx = 0; ty = 0;
+        img.style.transition = 'transform .2s ease';
+        apply();
+        setTimeout(() => { img.style.transition = ''; }, 220);
+      };
+
       const render = (i) => {
         index = (i + urls.length) % urls.length;
+        img.style.transition = 'none';
         img.src = urls[index];
+        reset();
         counter.textContent = (index + 1) + ' / ' + urls.length;
         const show = urls.length > 1;
         prev.style.display = show ? '' : 'none';
@@ -5338,15 +5365,67 @@ const DetailPage = {
       prev.onclick = (e) => { e.stopPropagation(); render(index - 1); };
       next.onclick = (e) => { e.stopPropagation(); render(index + 1); };
 
-      // 移动端左右滑动切换
-      let startX = null;
-      img.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+      // ---- 触摸手势 ----
+      let mode = null, startX = 0, startY = 0, lastX = 0, startTx = 0, startTy = 0;
+      let startDist = 0, startScale = 1, moved = false;
+      const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+
+      img.addEventListener('touchstart', (e) => {
+        moved = false;
+        img.style.transition = 'none';
+        if (e.touches.length === 2) {
+          mode = 'pinch';
+          startDist = dist(e.touches[0], e.touches[1]) || 1;
+          startScale = scale;
+        } else if (e.touches.length === 1) {
+          startX = lastX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          startTx = tx; startTy = ty;
+          mode = scale > 1 ? 'pan' : 'swipe';
+        }
+      }, { passive: false });
+
+      img.addEventListener('touchmove', (e) => {
+        if (!mode) return;
+        e.preventDefault();
+        if (mode === 'pinch' && e.touches.length === 2) {
+          const d = dist(e.touches[0], e.touches[1]);
+          scale = Math.min(6, Math.max(1, startScale * (d / startDist)));
+          apply(); moved = true;
+        } else if (mode === 'pan' && e.touches.length === 1) {
+          const t = e.touches[0];
+          tx = startTx + (t.clientX - startX);
+          ty = startTy + (t.clientY - startY);
+          apply(); moved = true;
+        } else if (mode === 'swipe' && e.touches.length === 1) {
+          lastX = e.touches[0].clientX; moved = true; // 仅记录，touchend 时判断切换
+        }
+      }, { passive: false });
+
       img.addEventListener('touchend', (e) => {
-        if (startX === null) return;
-        const dx = e.changedTouches[0].clientX - startX;
-        if (Math.abs(dx) > 40) render(dx < 0 ? index + 1 : index - 1);
-        startX = null;
+        if (mode === 'pinch') {
+          // 双指松开剩单指 → 进入平移
+          if (e.touches.length === 1) {
+            mode = 'pan';
+            startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+            startTx = tx; startTy = ty;
+          } else {
+            mode = null; if (scale <= 1) reset();
+          }
+          return;
+        }
+        if (mode === 'swipe') {
+          const dx = lastX - startX;
+          if (Math.abs(dx) > 40) render(dx < 0 ? index + 1 : index - 1);
+        }
+        if (scale <= 1) mode = null;
       }, { passive: true });
+
+      // 双击切换缩放（桌面/支持双击的设备）
+      img.addEventListener('dblclick', () => {
+        if (scale > 1) reset();
+        else { scale = 2.5; apply(); }
+      });
     },
 
     /** 从网格容器委托打开（读取 data-urls 与当前 data-index） */
