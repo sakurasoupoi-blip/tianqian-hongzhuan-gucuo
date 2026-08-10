@@ -3851,6 +3851,8 @@ const PlanSection = {
     let startX = 0, startY = 0, startPanX = 0, startPanY = 0;
     let moved = false;
     let markerEl = null, markerId = null, markerMoved = false;
+    // 双击检测（用于空白双击复位）
+    let lastTapTime = 0, lastTapX = 0, lastTapY = 0, tapTimer = null;
 
     viewport.addEventListener('touchstart', (e) => {
       moved = false;
@@ -3929,6 +3931,7 @@ const PlanSection = {
         const t = e.touches[0];
         if (Math.abs(t.clientX - startX) > 8 || Math.abs(t.clientY - startY) > 8) {
           mode = 'pan';
+          moved = true;
           viewport.style.cursor = 'grabbing';
           startPanX = this.view.panX; startPanY = this.view.panY;
           startX = t.clientX; startY = t.clientY;
@@ -3950,6 +3953,30 @@ const PlanSection = {
       }
       if (mode === 'pan') {
         viewport.style.cursor = '';
+        // 空白点按（未移动）：单指点按逐级放大到该点；双击空白复位为总览/初始视图
+        if (!moved) {
+          const now = Date.now();
+          const near = Math.abs(startX - lastTapX) < 30 && Math.abs(startY - lastTapY) < 30;
+          if (now - lastTapTime < 300 && near) {
+            // 双击 → 复位
+            if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
+            lastTapTime = 0;
+            if (this._localityInitial) {
+              this.view = { zoom: this._localityInitial.zoom, panX: this._localityInitial.panX, panY: this._localityInitial.panY };
+              this._clampPan(); this._applyTransform();
+            } else {
+              this.resetView();
+            }
+          } else {
+            lastTapX = startX; lastTapY = startY; lastTapTime = now;
+            if (tapTimer) clearTimeout(tapTimer);
+            tapTimer = setTimeout(() => {
+              tapTimer = null;
+              const vpRect = viewport.getBoundingClientRect();
+              this._tapZoomIn(startX - vpRect.left, startY - vpRect.top);
+            }, 280);
+          }
+        }
       } else if (mode === 'marker' && markerMoved && markerId && markerEl) {
         const pctX = parseFloat(markerEl.style.left);
         const pctY = parseFloat(markerEl.style.top);
@@ -3966,9 +3993,18 @@ const PlanSection = {
     }, { passive: false });
 
     viewport.addEventListener('touchcancel', () => {
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
       mode = null; markerEl = null; markerId = null; markerMoved = false;
       viewport.style.cursor = '';
     }, { passive: true });
+  },
+
+  /** 手机端空白点按：以该点为焦点逐级放大（每次约 1.8x，上限 2x 原始分辨率） */
+  _tapZoomIn(vx, vy) {
+    if (!this._fitZoom) return;
+    const target = Math.min(2.0, Math.max(this.view.zoom * 1.8, this._fitZoom * 1.8));
+    if (target <= this.view.zoom) return;
+    this._zoomAt(vx, vy, target / this.view.zoom);
   },
 
   /** mouseup handler（绑定到 document） */
