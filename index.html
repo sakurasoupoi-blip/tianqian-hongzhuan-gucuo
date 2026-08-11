@@ -6630,25 +6630,54 @@ async function syncOptImages(token) {
     for (let i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
     return btoa(bin);
   }
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  // 单个文件上传：已存在且 sha 相同则跳过；命中限流(403/429/5xx)退避重试；缺 sha(422)先取再传
+  async function uploadOne(f) {
+    const rpath = 'images/opt/' + f.path;
+    const res = await fetch('images/opt/' + f.path, { cache: 'no-store' });
+    if (!res.ok) return false;
+    const buf = await res.arrayBuffer();
+    const sha = await gitBlobSha(buf);
+    if (remote[rpath] === sha) return 'skip';
+    const putBody = { message: 'opt ' + f.path, content: bytesToBase64(buf) };
+    if (remote[rpath]) putBody.sha = remote[rpath];
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const pr = await api('PUT', `/repos/${OWNER}/${REPO}/contents/${rpath}`, putBody);
+      if (pr.ok) { remote[rpath] = sha; return true; }
+      const st = pr.status;
+      if (st === 422 && !putBody.sha) {            // 文件已存在但缺 sha
+        try {
+          const g = await api('GET', `/repos/${OWNER}/${REPO}/contents/${rpath}`);
+          if (g.ok) { const j = await g.json(); putBody.sha = j.sha; continue; }
+        } catch (_) {}
+        return false;
+      }
+      if (st === 403 || st === 429 || st >= 500) {  // 限流：指数退避后重试
+        await delay(1000 * Math.pow(2, attempt));
+        continue;
+      }
+      return false;
+    }
+    return false;
+  }
+
   let uploaded = 0, skipped = 0, failed = 0;
   const files = manifest.files.slice();
   files.push({ path: 'manifest.json', size: 0 });
   for (const f of files) {
-    try {
-      const res = await fetch('images/opt/' + f.path, { cache: 'no-store' });
-      if (!res.ok) { failed++; continue; }
-      const buf = await res.arrayBuffer();
-      const sha = await gitBlobSha(buf);
-      const rpath = 'images/opt/' + f.path;
-      const rsha = remote[rpath];
-      if (rsha === sha) { skipped++; continue; }
-      const putBody = { message: 'opt ' + f.path, content: bytesToBase64(buf) };
-      if (rsha) putBody.sha = rsha;
-      const pr = await api('PUT', `/repos/${OWNER}/${REPO}/contents/${rpath}`, putBody);
-      if (pr.ok) uploaded++; else failed++;
-    } catch (_) { failed++; }
+    let r;
+    try { r = await uploadOne(f); }
+    catch (_) { r = false; }
+    if (r === true) uploaded++;
+    else if (r === 'skip') skipped++;
+    else failed++;
+    await delay(120); // 缓解 GitHub 二级限流，保证大批量可完整上传
   }
-  Utils.toast(`压缩图同步：上传 ${uploaded}，跳过 ${skipped}${failed ? '，失败 ' + failed : ''}`, failed ? 'error' : 'success', 6000);
+  if (failed === 0) {
+    Utils.toast(`压缩图同步完成：上传 ${uploaded}，跳过 ${skipped}`, 'success', 6000);
+  } else {
+    Utils.toast(`压缩图同步：上传 ${uploaded}，跳过 ${skipped}，失败 ${failed}（可再次点发布补传未传部分）`, 'error', 9000);
+  }
   return failed === 0;
 }
 
