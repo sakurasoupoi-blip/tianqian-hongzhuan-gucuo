@@ -6883,6 +6883,19 @@ const Actions = {
       const rj = await res.json();
       const cs = (rj.commit && rj.commit.sha) ? rj.commit.sha.slice(0, 10) : '';
       Utils.toast('✅ 页面已发布（提交 ' + cs + '），正在同步压缩图…', 'success', 4000);
+
+      // 确保仓库根存在 .nojekyll：禁用 Jekyll，使含中文/深层路径的图片（建筑档案现状照片）能被静态托管，避免 404
+      try {
+        const njContent = utf8ToBase64('# Disable Jekyll so Chinese / deep-path assets (建筑档案) are served statically\n');
+        const njCur = await api('GET', `/repos/${OWNER}/${REPO}/contents/.nojekyll?ref=main`);
+        let njSha;
+        if (njCur.ok) { const nj = await njCur.json(); njSha = nj.sha; }
+        const njBody = { message: 'add .nojekyll', content: njContent };
+        if (njSha) njBody.sha = njSha;
+        const njRes = await api('PUT', `/repos/${OWNER}/${REPO}/contents/.nojekyll`, njBody);
+        if (!njRes.ok) { const e = await njRes.json().catch(() => ({})); console.warn('[nojekyll] 上传失败', e.message); }
+      } catch (njErr) { console.warn('[nojekyll] 上传异常', njErr); }
+
       await syncOptImages(token);
     } catch (err) {
       Utils.toast('发布失败：' + err.message + '（令牌无效或网络异常时请重试；可在浏览器控制台清除 tq_gh_pat 重新输入）', 'error', 9000);
